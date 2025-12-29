@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Sistem Laporan Penjualan</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+:root{--primary:#2563eb;--bg:#f3f4f6;--text:#111827;--muted:#6b7280;--border:#e5e7eb;--danger:#dc2626}
+*{box-sizing:border-box}
+body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text)}
+.container{max-width:420px;margin:60px auto;background:#fff;padding:30px;border-radius:14px;border:1px solid var(--border)}
+h1{margin:0 0 8px;text-align:center;font-size:22px}
+.subtitle{text-align:center;font-size:14px;color:var(--muted);margin-bottom:20px}
+.meta{text-align:center;font-size:13px;color:var(--muted);margin-bottom:6px}
+input,button{width:100%;padding:13px;font-size:15px;border-radius:10px;margin-bottom:14px}
+input{border:1px solid var(--border);text-transform:uppercase}
+input:focus{outline:none;border-color:var(--primary)}
+button{border:none;cursor:pointer;font-weight:600}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-logout{background:#f9fafb;border:1px solid var(--border);color:var(--danger)}
+.upload-box{border:2px dashed var(--border);border-radius:12px;padding:22px;text-align:center;cursor:pointer;color:var(--primary);font-weight:600;background:#f9fafb;margin-top:18px}
+.upload-box input{display:none}
+.total{text-align:center;margin-top:26px}
+.total .label{font-size:13px;color:var(--muted)}
+.total .value{font-size:32px;font-weight:700;margin-top:6px}
+.spinner{width:36px;height:36px;border:4px solid #e5e7eb;border-top:4px solid var(--primary);border-radius:50%;animation:spin 1s linear infinite;margin:16px auto}
+@keyframes spin{to{transform:rotate(360deg)}}
+.error{text-align:center;color:var(--danger);font-size:14px}
+#uploadPage,#resultPage{display:none}
+</style>
+</head>
+<body>
+
+<div class="container" id="loginPage">
+  <h1>Login Sistem</h1>
+  <p class="subtitle">Masukkan akun terdaftar</p>
+  <input id="username" placeholder="USERNAME">
+  <input id="storeId" placeholder="KODE TOKO">
+  <button class="btn-primary" onclick="login()">Masuk</button>
+  <p class="error" id="error"></p>
+</div>
+
+<div class="container" id="uploadPage">
+  <h1>Sistem Laporan Penjualan</h1>
+  <div class="meta" id="welcomeText"></div>
+  <div class="meta" id="todayText"></div>
+  <div class="meta" id="expiredInfo"></div>
+  <form id="form">
+    <label class="upload-box">
+      <input type="file" name="zipfile" accept=".zip" required id="zipInput">
+      <span id="fileLabel">Upload File ZIP</span>
+    </label>
+    <button class="btn-primary">Proses</button>
+  </form>
+  <div id="uploadResult"></div>
+  <button class="btn-logout" onclick="logout()">Logout</button>
+</div>
+
+<div class="container" id="resultPage">
+  <h1 id="resultTitle"></h1>
+  <div class="meta" id="resultDetail"></div>
+  <div class="meta" id="resultWelcome"></div>
+  <div class="meta" id="resultToday"></div>
+  <div class="meta" id="resultExpired"></div>
+  <div class="total">
+    <div class="label">TOTAL SETORAN</div>
+    <div class="value" id="totalValue">Rp 0</div>
+  </div>
+  <button class="btn-primary" onclick="uploadAgain()">Upload Lagi</button>
+  <button class="btn-logout" onclick="logout()">Logout</button>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyAvl_paDtkaHgPM2F1PRtybh_EanGfDT_Q",
+  databaseURL: "https://serversetoran-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "serversetoran"
+});
+const db = getDatabase(app);
+let expiredDate = "";
+
+const todayID = () => new Date().toLocaleDateString("id-ID",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
+const dateID = d => new Date(d).toLocaleDateString("id-ID",{day:"2-digit",month:"long",year:"numeric"});
+
+window.login = async () => {
+  const u = username.value.trim().toUpperCase();
+  const s = storeId.value.trim().toUpperCase();
+  if(!u || !s) return error.textContent="Data wajib diisi";
+  const snap = await get(ref(db,"userList"));
+  let user=null;
+  snap.forEach(c=>{ const v=c.val(); if(v.username?.toUpperCase()==u && v.storeId?.toUpperCase()==s) user=v; });
+  if(!user) return error.textContent="Login tidak valid";
+  const today=new Date().toISOString().split("T")[0];
+  if(user.expired < today) return error.textContent="Akun sudah expired";
+  expiredDate = user.expired;
+  sessionStorage.setItem("login","1");
+  sessionStorage.setItem("user",u);
+  sessionStorage.setItem("store",s);
+  showUpload();
+};
+
+function showUpload(){
+  loginPage.style.display="none";
+  uploadPage.style.display="block";
+  welcomeText.textContent=`Selamat datang, ${sessionStorage.getItem("user")}`;
+  todayText.textContent=`Tanggal: ${todayID()}`;
+  expiredInfo.textContent=`Masa Aktif: s/d ${dateID(expiredDate)}`;
+}
+
+function showResult(d){
+  uploadPage.style.display="none";
+  resultPage.style.display="block";
+  resultTitle.textContent=d.title;
+  resultDetail.textContent=d.detail;
+  resultWelcome.textContent=`User: ${sessionStorage.getItem("user")}`;
+  resultToday.textContent=`Tanggal Cetak: ${todayID()}`;
+  resultExpired.textContent=`Akun Aktif s/d ${dateID(expiredDate)}`;
+  totalValue.textContent=`Rp ${d.hasil.toLocaleString("id-ID")}`;
+}
+
+form.onsubmit = async e => {
+  e.preventDefault();
+  uploadResult.innerHTML=`<div class="spinner"></div><div class="meta">Memproses laporan...</div>`;
+  const fd = new FormData(form);
+  fd.append("storeId", sessionStorage.getItem("store"));
+  const res = await fetch("/api/upload",{ method:"POST", body: fd });
+  const j = await res.json();
+  j.error ? uploadResult.innerHTML=`<p class="error">${j.error}</p>` : showResult(j);
+};
+
+zipInput.onchange = () => fileLabel.textContent = zipInput.files[0]?.name || "Upload File ZIP";
+window.uploadAgain = () => { resultPage.style.display="none"; uploadPage.style.display="block"; form.reset(); fileLabel.textContent="Upload File ZIP"; uploadResult.innerHTML=""; };
+window.logout = () => { sessionStorage.clear(); location.reload(); };
+if(sessionStorage.getItem("login")) showUpload();
+</script>
+</body>
+</html>

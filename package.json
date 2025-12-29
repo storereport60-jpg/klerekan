@@ -1,0 +1,8 @@
+{
+  "type": "module",
+  "dependencies": {
+    "adm-zip": "^0.5.12",
+    "multer": "1.4.5-lts.1",
+    "sqlite3": "^5.1.7"
+  }
+}
