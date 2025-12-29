@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Admin Panel</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+body{font-family:Inter,Arial;background:#f3f4f6;padding:20px}
+.card{background:#fff;padding:20px;border-radius:12px;margin-bottom:20px}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px;border-bottom:1px solid #ddd;font-size:13px}
+button{padding:6px 10px;border:none;border-radius:6px;cursor:pointer}
+.primary{background:#2563eb;color:#fff}
+.danger{background:#dc2626;color:#fff}
+</style>
+</head>
+<body>
+
+<h2>Admin Panel</h2>
+
+<div class="card">
+<form id="add">
+<input id="u" placeholder="USERNAME" required>
+<input id="s" placeholder="STORE ID" required>
+<input id="e" type="date" required>
+<select id="r">
+<option value="user">USER</option>
+<option value="admin">ADMIN</option>
+</select>
+<button class="primary">Tambah</button>
+</form>
+</div>
+
+<div class="card">
+<table>
+<thead>
+<tr>
+<th>User</th><th>Store</th><th>Expired</th><th>Device</th><th>Status</th><th>Aksi</th>
+</tr>
+</thead>
+<tbody id="list"></tbody>
+</table>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
+import { getDatabase, ref, onValue, push, update, remove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+
+const app = initializeApp({
+  apiKey: "AIzaSyAvl_paDtkaHgPM2F1PRtybh_EanGfDT_Q",
+  databaseURL: "https://serversetoran-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "serversetoran"
+});
+const db = getDatabase(app);
+
+if(sessionStorage.getItem("role")!=="admin") location.href="/";
+
+onValue(ref(db,"userList"),snap=>{
+  list.innerHTML="";
+  snap.forEach(c=>{
+    const u=c.val();
+    list.innerHTML+=`
+<tr>
+<td>${u.username}</td>
+<td>${u.storeId}</td>
+<td>${u.expired}</td>
+<td>${u.deviceId?"🔒":"-"}</td>
+<td>${u.active?"Aktif":"Off"}</td>
+<td>
+<button onclick="reset('${c.key}')">Reset</button>
+<button onclick="toggle('${c.key}',${u.active})">On/Off</button>
+<button class="danger" onclick="del('${c.key}')">Hapus</button>
+</td>
+</tr>`;
+  });
+});
+
+add.onsubmit=e=>{
+  e.preventDefault();
+  push(ref(db,"userList"),{
+    username:u.value.toUpperCase(),
+    storeId:s.value.toUpperCase(),
+    expired:e.value,
+    role:r.value,
+    active:true
+  });
+  add.reset();
+};
+
+window.reset=id=>update(ref(db,"userList/"+id),{deviceId:null});
+window.toggle=(id,a)=>update(ref(db,"userList/"+id),{active:!a});
+window.del=id=>confirm("Hapus user?")&&remove(ref(db,"userList/"+id));
+</script>
+</body>
+</html>
