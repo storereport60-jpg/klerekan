@@ -20,10 +20,14 @@ body{
   font-family:Inter,Segoe UI,Arial,sans-serif;
   background:var(--bg);
   color:var(--text);
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
 }
 .container{
+  width:100%;
   max-width:420px;
-  margin:60px auto;
   background:#fff;
   padding:30px;
   border-radius:14px;
@@ -49,7 +53,7 @@ button{
   font-weight:600;
 }
 .btn-primary{background:var(--primary);color:#fff}
-.btn-primary:disabled{opacity:.6;cursor:not-allowed}
+.btn-primary:disabled{opacity:.6}
 .btn-logout{
   background:#f9fafb;
   border:1px solid var(--border);
@@ -64,16 +68,9 @@ button{
   color:var(--primary);
   font-weight:600;
   background:#f9fafb;
-  transition:.2s;
 }
-.upload-box:hover{background:#eef2ff}
 .upload-box input{display:none}
-.status{
-  text-align:center;
-  font-size:14px;
-  color:var(--muted);
-  margin-top:10px;
-}
+.status{text-align:center;font-size:14px;color:var(--muted);margin-top:10px}
 .spinner{
   width:32px;height:32px;
   border:4px solid #e5e7eb;
@@ -87,9 +84,27 @@ button{
 .total .label{font-size:13px;color:var(--muted)}
 .total .value{font-size:32px;font-weight:700}
 .error{text-align:center;color:var(--danger);font-size:14px}
+
+.announce{
+  background:#eef2ff;
+  border:1px solid #c7d2fe;
+  color:#1e3a8a;
+  padding:14px;
+  border-radius:10px;
+  font-size:14px;
+  margin-top:14px;
+  text-align:center;
+}
+.announce a{
+  color:#1d4ed8;
+  font-weight:600;
+  text-decoration:none;
+}
+.announce a:hover{text-decoration:underline}
+
 #uploadPage,#resultPage{display:none}
 .fade{animation:fade .25s ease}
-@keyframes fade{from{opacity:0;transform:translateY(5px)}to{opacity:1}}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1}}
 </style>
 </head>
 
@@ -98,11 +113,20 @@ button{
 <!-- LOGIN -->
 <div class="container fade" id="loginPage">
   <h1>Login Sistem</h1>
-  <p class="subtitle">Masukkan akun terdaftar</p>
+  <p class="subtitle">Masukkan username terdaftar</p>
+
   <input id="username" placeholder="USERNAME">
-  <input id="storeId" placeholder="KODE TOKO">
+
   <button class="btn-primary" onclick="login()">Masuk</button>
   <p class="error" id="error"></p>
+
+  <div class="announce">
+    📢 <strong>Pengumuman</strong><br>
+    Segera bergabung ke grup WhatsApp resmi untuk info & update sistem<br>
+    👉 <a href="https://chat.whatsapp.com/J4CLPxvk942FEufV5FIxY3" target="_blank">
+      Gabung Grup WhatsApp
+    </a>
+  </div>
 </div>
 
 <!-- UPLOAD -->
@@ -143,7 +167,7 @@ button{
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
 import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
-/* ===== FIREBASE CONFIG ===== */
+/* FIREBASE */
 const app = initializeApp({
   apiKey: "AIzaSyAvl_paDtkaHgPM2F1PRtybh_EanGfDT_Q",
   databaseURL: "https://serversetoran-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -151,7 +175,7 @@ const app = initializeApp({
 });
 const db = getDatabase(app);
 
-/* ===== DEVICE LOCK ===== */
+/* DEVICE */
 function deviceId(){
   let d=localStorage.getItem("device_id");
   if(!d){
@@ -161,33 +185,43 @@ function deviceId(){
   return d;
 }
 
+let userStoreId="";
 let expiredDate="";
 const todayID=()=>new Date().toLocaleDateString("id-ID",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
 const dateID=d=>new Date(d).toLocaleDateString("id-ID",{day:"2-digit",month:"long",year:"numeric"});
 
-/* ===== LOGIN ===== */
+/* LOGIN */
 window.login = async ()=>{
   error.textContent="";
   const u=username.value.trim().toUpperCase();
-  const s=storeId.value.trim().toUpperCase();
-  if(!u||!s) return error.textContent="Data wajib diisi";
+  if(!u) return error.textContent="Username wajib diisi";
 
   const snap=await get(ref(db,"userList"));
   let key=null,user=null;
+
   snap.forEach(c=>{
     const v=c.val();
-    if(v.username===u && v.storeId===s && v.active){key=c.key;user=v;}
+    if(v.username===u && v.active){
+      key=c.key;
+      user=v;
+    }
   });
-  if(!user) return error.textContent="Login tidak valid";
+
+  if(!user) return error.textContent="Akun tidak ditemukan / tidak aktif";
 
   const today=new Date().toISOString().split("T")[0];
-  if(user.expired<today) return error.textContent="Akun sudah expired";
+  if(user.expired < today) return error.textContent="Akun sudah expired";
 
   const dev=deviceId();
-  if(!user.deviceId) await update(ref(db,"userList/"+key),{deviceId:dev});
-  else if(user.deviceId!==dev) return error.textContent="Akun terkunci di device lain";
+  if(!user.deviceId){
+    await update(ref(db,"userList/"+key),{deviceId:dev});
+  }else if(user.deviceId!==dev){
+    return error.textContent="Akun terkunci di device lain";
+  }
 
+  userStoreId=user.storeId;
   expiredDate=user.expired;
+
   loginPage.style.display="none";
   uploadPage.style.display="block";
   welcomeText.textContent="Selamat datang, "+u;
@@ -195,14 +229,12 @@ window.login = async ()=>{
   expiredInfo.textContent="Aktif s/d "+dateID(expiredDate);
 };
 
-/* ===== FILE LABEL ===== */
+/* FILE */
 zipInput.onchange=()=>{
-  fileLabel.textContent=zipInput.files[0]
-    ? zipInput.files[0].name
-    : "Upload File ZIP";
+  fileLabel.textContent=zipInput.files[0]?.name || "Upload File ZIP";
 };
 
-/* ===== UPLOAD ===== */
+/* UPLOAD */
 form.onsubmit=async e=>{
   e.preventDefault();
   if(form.dataset.loading) return;
@@ -214,7 +246,7 @@ form.onsubmit=async e=>{
 
   const fd=new FormData();
   fd.append("zipfile",zipInput.files[0]);
-  fd.append("storeId",storeId.value);
+  fd.append("storeId",userStoreId);
 
   const r=await fetch("/api/upload",{method:"POST",body:fd});
   const j=await r.json();
@@ -236,7 +268,7 @@ form.onsubmit=async e=>{
   totalValue.textContent="Rp "+j.hasil.toLocaleString("id-ID");
 };
 
-/* ===== UPLOAD AGAIN ===== */
+/* AGAIN */
 window.uploadAgain=()=>{
   form.reset();
   uploadResult.innerHTML="";
@@ -246,9 +278,8 @@ window.uploadAgain=()=>{
   uploadPage.style.display="block";
 };
 
-/* ===== LOGOUT ===== */
+/* LOGOUT */
 window.logout=()=>{
-  sessionStorage.clear();
   location.reload();
 };
 </script>
