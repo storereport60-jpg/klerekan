@@ -92,7 +92,7 @@ button{
   padding:14px;
   border-radius:10px;
   font-size:14px;
-  margin-top:14px;
+  margin:14px 0;
   text-align:center;
 }
 .announce a{
@@ -116,17 +116,9 @@ button{
   <p class="subtitle">Masukkan username terdaftar</p>
 
   <input id="username" placeholder="USERNAME">
-
   <button class="btn-primary" onclick="login()">Masuk</button>
-  <p class="error" id="error"></p>
 
-  <div class="announce">
-    📢 <strong>Pengumuman</strong><br>
-    Segera bergabung ke grup WhatsApp resmi untuk info & update sistem<br>
-    👉 <a href="https://chat.whatsapp.com/J4CLPxvk942FEufV5FIxY3" target="_blank">
-      Gabung Grup WhatsApp
-    </a>
-  </div>
+  <p class="error" id="error"></p>
 </div>
 
 <!-- UPLOAD -->
@@ -135,6 +127,15 @@ button{
   <div class="meta" id="welcomeText"></div>
   <div class="meta" id="todayText"></div>
   <div class="meta" id="expiredInfo"></div>
+
+  <!-- PENGUMUMAN (SETELAH LOGIN) -->
+  <div class="announce">
+    📢 <strong>Pengumuman</strong><br>
+    Wajib bergabung ke grup WhatsApp resmi untuk info & update sistem<br>
+    👉 <a href="https://chat.whatsapp.com/J4CLPxvk942FEufV5FIxY3" target="_blank">
+      Gabung Grup WhatsApp
+    </a>
+  </div>
 
   <form id="form">
     <label class="upload-box">
@@ -167,7 +168,6 @@ button{
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
 import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
-/* FIREBASE */
 const app = initializeApp({
   apiKey: "AIzaSyAvl_paDtkaHgPM2F1PRtybh_EanGfDT_Q",
   databaseURL: "https://serversetoran-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -175,7 +175,6 @@ const app = initializeApp({
 });
 const db = getDatabase(app);
 
-/* DEVICE */
 function deviceId(){
   let d=localStorage.getItem("device_id");
   if(!d){
@@ -190,7 +189,6 @@ let expiredDate="";
 const todayID=()=>new Date().toLocaleDateString("id-ID",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
 const dateID=d=>new Date(d).toLocaleDateString("id-ID",{day:"2-digit",month:"long",year:"numeric"});
 
-/* LOGIN */
 window.login = async ()=>{
   error.textContent="";
   const u=username.value.trim().toUpperCase();
@@ -229,17 +227,12 @@ window.login = async ()=>{
   expiredInfo.textContent="Aktif s/d "+dateID(expiredDate);
 };
 
-/* FILE */
 zipInput.onchange=()=>{
   fileLabel.textContent=zipInput.files[0]?.name || "Upload File ZIP";
 };
 
-/* UPLOAD */
 form.onsubmit=async e=>{
   e.preventDefault();
-  if(form.dataset.loading) return;
-  form.dataset.loading="1";
-
   submitBtn.disabled=true;
   statusText.textContent="⏳ Memproses file...";
   uploadResult.innerHTML=`<div class="spinner"></div>`;
@@ -251,7 +244,6 @@ form.onsubmit=async e=>{
   const r=await fetch("/api/upload",{method:"POST",body:fd});
   const j=await r.json();
 
-  form.dataset.loading="";
   submitBtn.disabled=false;
 
   if(j.error){
@@ -268,7 +260,6 @@ form.onsubmit=async e=>{
   totalValue.textContent="Rp "+j.hasil.toLocaleString("id-ID");
 };
 
-/* AGAIN */
 window.uploadAgain=()=>{
   form.reset();
   uploadResult.innerHTML="";
@@ -278,10 +269,7 @@ window.uploadAgain=()=>{
   uploadPage.style.display="block";
 };
 
-/* LOGOUT */
-window.logout=()=>{
-  location.reload();
-};
+window.logout=()=>location.reload();
 </script>
 
 </body>
