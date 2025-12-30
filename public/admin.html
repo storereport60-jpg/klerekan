@@ -10,6 +10,41 @@
 
 <style>
 body{font-family:Arial;background:#eef2f6;margin:0}
+
+/* ===== CENTER LOGIN ===== */
+.login-wrap{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.login-card{
+  background:#fff;
+  width:100%;
+  max-width:360px;
+  padding:25px;
+  border-radius:10px;
+  box-shadow:0 4px 15px rgba(0,0,0,.1);
+}
+.login-card h2{text-align:center;margin-top:0}
+.login-card input{
+  width:100%;
+  padding:10px;
+  margin:10px 0;
+  border-radius:6px;
+  border:1px solid #ccc;
+}
+.login-card button{
+  width:100%;
+  padding:10px;
+  border-radius:6px;
+  border:none;
+  background:#1e88e5;
+  color:#fff;
+  font-weight:bold;
+  cursor:pointer;
+}
+
 .container{max-width:1200px;margin:30px auto;padding:0 15px}
 .card{
   background:#fff;
@@ -23,7 +58,6 @@ table{width:100%;border-collapse:collapse}
 th,td{
   padding:10px;
   border-bottom:1px solid #e0e0e0;
-  text-align:left;
   font-size:14px
 }
 th{background:#f5f7fa}
@@ -34,7 +68,6 @@ input,button{
   font-size:14px
 }
 button{cursor:pointer;border:none;color:#fff;font-weight:600}
-.primary{background:#1e88e5}
 .success{background:#43a047}
 .warning{background:#fb8c00}
 .danger{background:#e53935}
@@ -62,24 +95,29 @@ button{cursor:pointer;border:none;color:#fff;font-weight:600}
   display:flex;
   justify-content:space-between;
   align-items:center;
-  margin-bottom:10px
+}
+
+/* AUTO UPPER */
+.upper{
+  text-transform:uppercase;
 }
 </style>
 </head>
 
 <body>
 
-<div class="container">
-
 <!-- LOGIN -->
-<div id="login" class="card">
-  <h2>🔐 Admin Login</h2>
-  <input id="pin" type="password" placeholder="Masukkan PIN Admin">
-  <button class="primary" onclick="loginAdmin()">LOGIN</button>
+<div class="login-wrap" id="login">
+  <div class="login-card">
+    <h2>🔐 Admin Login</h2>
+    <input id="pin" type="password" placeholder="Masukkan PIN Admin">
+    <button onclick="loginAdmin()">LOGIN</button>
+  </div>
 </div>
 
 <!-- PANEL -->
 <div id="panel" class="hidden">
+<div class="container">
 
   <div class="card header">
     <h2>🧑‍💼 Panel Administrator</h2>
@@ -93,10 +131,10 @@ button{cursor:pointer;border:none;color:#fff;font-weight:600}
 
   <!-- ADD USER -->
   <div class="card">
-    <h3>User Manajemen</h3>
+    <h3>User Management</h3>
     <div class="flex">
-      <input id="u" placeholder="Username">
-      <input id="s" placeholder="Store ID">
+      <input id="u" class="upper" placeholder="USERNAME" oninput="this.value=this.value.toUpperCase()">
+      <input id="s" class="upper" placeholder="STORE ID" oninput="this.value=this.value.toUpperCase()">
       <input id="d" type="number" min="1" placeholder="Masa aktif (hari)">
       <button class="success" onclick="addUser()">Tambah User</button>
     </div>
@@ -128,19 +166,17 @@ button{cursor:pointer;border:none;color:#fff;font-weight:600}
 </div>
 
 <script>
-/* ===== FIREBASE ===== */
+/* FIREBASE */
 firebase.initializeApp({
-  apiKey: "AIzaSyAvl_paDtkaHgPM2F1PRtybh_EanGfDT_Q",
-  databaseURL: "https://serversetoran-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "serversetoran"
+  apiKey:"AIzaSyAvl_paDtkaHgPM2F1PRtybh_EanGfDT_Q",
+  databaseURL:"https://serversetoran-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"serversetoran"
 });
-const db = firebase.database();
-
-/* ===== CONFIG ===== */
+const db=firebase.database();
 const ADMIN_PIN="500000";
 let USERS={};
 
-/* ===== LOGIN ===== */
+/* LOGIN */
 function loginAdmin(){
   if(pin.value!==ADMIN_PIN) return alert("PIN salah");
   login.classList.add("hidden");
@@ -148,16 +184,16 @@ function loginAdmin(){
   loadUsers();
 }
 
-/* ===== LOAD ===== */
+/* LOAD */
 function loadUsers(){
-  db.ref("userList").on("value",snap=>{
-    USERS=snap.val()||{};
+  db.ref("userList").on("value",s=>{
+    USERS=s.val()||{};
     total.innerText=Object.keys(USERS).length;
     renderTable();
   });
 }
 
-/* ===== RENDER ===== */
+/* RENDER */
 function renderTable(){
   const q=search.value.toLowerCase();
   list.innerHTML="";
@@ -168,8 +204,8 @@ function renderTable(){
 <tr>
 <td>${u.username}</td>
 <td>${u.storeId}</td>
-<td>${u.expired || "-"}</td>
-<td>${u.deviceId?"🔒 Terkunci":"🟢 Bebas"}</td>
+<td>${u.expired}</td>
+<td>${u.deviceId?"🔒":"🟢"}</td>
 <td>
 <button class="warning" onclick="editUser('${id}')">Edit</button>
 <button class="secondary" onclick="resetDevice('${id}','${u.username}')">Reset</button>
@@ -179,49 +215,35 @@ function renderTable(){
   });
 }
 
-/* ===== CRUD ===== */
+/* CRUD */
 function addUser(){
   if(!u.value||!s.value||!d.value) return alert("Lengkapi data");
-
   const days=parseInt(d.value);
-  const now=new Date();
-  now.setDate(now.getDate()+days);
-  const expired=now.toISOString().split("T")[0];
-
+  const ex=new Date(); ex.setDate(ex.getDate()+days);
   db.ref("userList").push({
-    username:u.value.toUpperCase(),
-    storeId:s.value.toUpperCase(),
+    username:u.value,
+    storeId:s.value,
     activeDays:days,
-    expired:expired,
+    expired:ex.toISOString().split("T")[0],
     active:true
   });
-
   u.value=s.value=d.value="";
 }
-
-function delUser(id){
-  confirm("Hapus user?") && db.ref("userList/"+id).remove();
-}
-
+function delUser(id){confirm("Hapus user?")&&db.ref("userList/"+id).remove();}
 function editUser(id){
   const days=prompt("Perpanjang berapa hari?");
   if(!days) return;
-  const now=new Date();
-  now.setDate(now.getDate()+parseInt(days));
+  const ex=new Date(); ex.setDate(ex.getDate()+parseInt(days));
   db.ref("userList/"+id).update({
     activeDays:parseInt(days),
-    expired:now.toISOString().split("T")[0]
+    expired:ex.toISOString().split("T")[0]
   });
 }
-
-function resetDevice(id,name){
-  if(confirm(`Reset device ${name}?`))
-    db.ref("userList/"+id).update({deviceId:null,lastLogin:null});
+function resetDevice(id,n){
+  confirm(`Reset device ${n}?`)&&db.ref("userList/"+id).update({deviceId:null,lastLogin:null});
 }
-
 function logout(){location.reload();}
 </script>
 
 </body>
 </html>
-
