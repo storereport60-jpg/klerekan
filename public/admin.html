@@ -5,228 +5,197 @@
 <title>Admin Panel</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
 
 <style>
+:root{
+  --primary:#2563eb;
+  --bg:#f3f4f6;
+  --card:#ffffff;
+  --text:#111827;
+  --muted:#6b7280;
+  --border:#e5e7eb;
+  --danger:#dc2626;
+  --warn:#f59e0b;
+  --ok:#16a34a;
+}
+
+*{box-sizing:border-box}
 body{
   margin:0;
-  font-family:Arial,Helvetica,sans-serif;
-  background:#f2f6fb;
+  font-family:Inter,Segoe UI,Arial,sans-serif;
+  background:linear-gradient(180deg,#f8fafc,#eef2f7);
+  color:var(--text);
 }
-.hidden{display:none}
 
 /* LOGIN */
 .login-wrap{
-  min-height:100vh;
+  position:fixed;
+  inset:0;
   display:flex;
   align-items:center;
   justify-content:center;
 }
 .login-card{
+  width:100%;
+  max-width:420px;
   background:#fff;
-  padding:35px;
-  width:320px;
-  border-radius:12px;
-  box-shadow:0 10px 30px rgba(0,0,0,.12);
+  padding:42px 38px;
+  border-radius:18px;
+  border:1px solid var(--border);
+  box-shadow:0 20px 45px rgba(0,0,0,.08);
   text-align:center;
 }
-.login-card h2{
-  margin:0 0 20px;
-}
+.login-card h1{margin:0 0 6px;font-size:26px}
+.login-card p{margin:0 0 26px;color:var(--muted);font-size:14px}
 .login-card input{
   width:100%;
-  padding:12px;
-  border-radius:8px;
-  border:1px solid #ccc;
-  font-size:15px;
+  padding:14px;
+  font-size:16px;
+  text-align:center;
+  border-radius:10px;
+  border:1px solid var(--border);
 }
 .login-card button{
-  margin-top:15px;
+  margin-top:18px;
   width:100%;
   padding:12px;
   border:none;
-  border-radius:8px;
-  background:#1e88e5;
+  border-radius:10px;
+  background:var(--primary);
   color:#fff;
-  font-size:16px;
+  font-size:15px;
   font-weight:600;
   cursor:pointer;
 }
 
 /* PANEL */
-.container{
-  max-width:1200px;
-  margin:30px auto;
-  padding:0 15px;
-}
+#panel{display:none}
+.container{max-width:1200px;margin:30px auto;padding:0 16px}
 .card{
   background:#fff;
-  border-radius:10px;
-  padding:20px;
-  box-shadow:0 4px 12px rgba(0,0,0,.08);
+  border-radius:14px;
+  border:1px solid var(--border);
+  padding:22px;
+  margin-bottom:20px;
 }
-.header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  margin-bottom:15px;
-}
-.badge{
-  background:#e3f2fd;
-  color:#1e88e5;
-  padding:6px 14px;
-  border-radius:20px;
-  font-size:13px;
-  font-weight:600;
-}
-
-/* FORM */
-.flex{
-  display:flex;
-  gap:10px;
-  flex-wrap:wrap;
-  align-items:center;
-}
-input,select,button{
-  padding:8px;
-  border-radius:6px;
-  border:1px solid #ccc;
-}
-button{
-  border:none;
-  cursor:pointer;
-  color:#fff;
-  font-weight:600;
-}
-.success{background:#43a047}
-.warning{background:#f9a825}
-.secondary{background:#6b7280}
-.danger{background:#e53935}
-
-/* TABLE */
-table{
-  width:100%;
-  border-collapse:collapse;
-  margin-top:15px;
-}
-th,td{
-  padding:10px;
-  border-bottom:1px solid #e0e0e0;
-  text-align:center;
-  font-size:14px;
-}
-th{
-  background:#f5f7fa;
-}
-.status-aktif{color:#16a34a;font-weight:600}
-.status-expired{color:#dc2626;font-weight:600}
-.small{font-size:12px;color:#666}
-
-/* WELCOME */
-.welcome{
-  background:#f1f8ff;
-  border-left:5px solid #1e88e5;
-  padding:12px 15px;
-  border-radius:6px;
-  margin-bottom:15px;
-}
+table{width:100%;border-collapse:collapse}
+th,td{padding:10px;border-bottom:1px solid var(--border);font-size:14px}
+th{background:#f9fafb}
+input,select,button{padding:8px;border-radius:6px;border:1px solid #ccc}
+button{border:none;color:#fff;font-weight:600;cursor:pointer}
+.primary{background:var(--primary)}
+.warning{background:var(--warn)}
+.gray{background:#6b7280}
+.danger{background:var(--danger)}
+.flex{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.badge{background:#eef2ff;padding:6px 14px;border-radius:999px;font-weight:600}
+.small{font-size:12px;color:var(--muted)}
 </style>
 </head>
 
 <body>
 
 <!-- LOGIN -->
-<div id="login" class="login-wrap">
+<div class="login-wrap" id="loginBox">
   <div class="login-card">
-    <h2>🔐 Admin Login</h2>
-    <input id="pin" type="password" placeholder="Masukkan PIN Admin">
-    <button onclick="loginAdmin()">LOGIN</button>
+    <h1>🔐 Admin Login</h1>
+    <p>Masukkan PIN Admin</p>
+    <input id="pin" type="password" maxlength="6" placeholder="••••••">
+    <button onclick="login()">Login</button>
   </div>
 </div>
 
 <!-- PANEL -->
-<div id="panel" class="hidden">
+<div id="panel">
   <div class="container">
 
-    <div class="welcome" id="greet"></div>
+    <!-- GREETING -->
+    <div class="card" style="background:#f8fafc">
+      <h3 id="greeting" style="margin:0 0 6px"></h3>
+      <p style="margin:0;color:var(--muted);font-size:14px">
+        Semoga aktivitas hari ini berjalan lancar.
+      </p>
+    </div>
 
+    <!-- ADD USER -->
     <div class="card">
-
-      <div class="header">
-        <h3>🧑‍💼 Manajemen User</h3>
-        <span class="badge">Total: <span id="total">0</span></span>
-      </div>
-
-      <!-- ADD USER -->
+      <h3>➕ Tambah User</h3>
       <div class="flex">
         <input id="u" placeholder="USERNAME" oninput="this.value=this.value.toUpperCase()">
         <input id="s" placeholder="STORE ID" oninput="this.value=this.value.toUpperCase()">
-        <input id="d" type="number" placeholder="Masa Aktif (Hari)">
-        <button class="success" onclick="addUser()">Tambah</button>
+        <input id="d" type="number" placeholder="Masa aktif (hari)">
+        <button class="primary" onclick="addUser()">Simpan</button>
+        <span class="badge">Total User: <span id="total">0</span></span>
       </div>
+    </div>
 
-      <!-- SEARCH & FILTER -->
-      <div class="flex" style="margin-top:15px">
-        <input id="search" placeholder="Cari user / store" oninput="render()">
+    <!-- SEARCH & FILTER -->
+    <div class="card">
+      <div class="flex">
+        <input id="search" placeholder="🔍 Cari username / store ID" oninput="render()">
         <select id="filter" onchange="render()">
           <option value="all">Semua</option>
-          <option value="aktif">Aktif</option>
+          <option value="active">Aktif</option>
+          <option value="soon">Hampir Expired (≤7 hari)</option>
           <option value="expired">Expired</option>
         </select>
       </div>
+    </div>
 
-      <!-- TABLE -->
+    <!-- TABLE -->
+    <div class="card">
       <table>
         <thead>
           <tr>
+            <th>User</th>
             <th>Store</th>
             <th>Expired</th>
             <th>Status</th>
-            <th>Device</th>
             <th>Aksi</th>
           </tr>
         </thead>
         <tbody id="list"></tbody>
       </table>
-
-      <button class="danger" style="margin-top:15px" onclick="logout()">Logout</button>
     </div>
+
+    <button class="danger" onclick="logout()">Logout</button>
   </div>
 </div>
 
 <script>
 /* FIREBASE */
 firebase.initializeApp({
-  apiKey: "AIzaSyCld9VE6XdF-tbcv1E-gBZ2ACeJBklW-Go",
-  authDomain: "server-laporan.firebaseapp.com",
-  databaseURL: "https://server-laporan-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "server-laporan"
+  apiKey: "AIzaSyAvl_paDtkaHgPM2F1PRtybh_EanGfDT_Q",
+  databaseURL: "https://serversetoran-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "serversetoran"
 });
 const db = firebase.database();
 
 /* CONFIG */
 const ADMIN_PIN="500000";
+const ADMIN_NAME="Pak Imron";
 let USERS={};
 
-/* LOGIN */
-function loginAdmin(){
-  if(pin.value!==ADMIN_PIN) return alert("PIN salah");
-  login.classList.add("hidden");
-  panel.classList.remove("hidden");
-  greetAdmin();
-  load();
+/* GREETING BY TIME */
+function setGreeting(){
+  const h=new Date().getHours();
+  let g="Selamat datang";
+  if(h<11) g="Selamat pagi";
+  else if(h<15) g="Selamat siang";
+  else if(h<18) g="Selamat sore";
+  else g="Selamat malam";
+  greeting.innerText=`👋 ${g}, ${ADMIN_NAME}`;
 }
 
-/* GREETING */
-function greetAdmin(){
-  const h=new Date().getHours();
-  let t="Selamat Datang";
-  if(h<11)t="Selamat Pagi";
-  else if(h<15)t="Selamat Siang";
-  else if(h<18)t="Selamat Sore";
-  else t="Selamat Malam";
-  greet.innerHTML=`👋 <strong>${t}, Admin</strong><br>Semoga pekerjaan Anda lancar hari ini.`;
+/* LOGIN */
+function login(){
+  if(pin.value!==ADMIN_PIN) return alert("PIN salah");
+  loginBox.style.display="none";
+  panel.style.display="block";
+  setGreeting();
+  load();
 }
 
 /* LOAD */
@@ -238,11 +207,14 @@ function load(){
   });
 }
 
-/* ADD */
+/* ADD USER */
 function addUser(){
-  if(!u.value||!s.value||!d.value) return alert("Lengkapi data");
+  const days=parseInt(d.value);
+  if(!u.value||!s.value||!days) return alert("Lengkapi data");
+
   const exp=new Date();
-  exp.setDate(exp.getDate()+parseInt(d.value));
+  exp.setDate(exp.getDate()+days);
+
   db.ref("userList").push({
     username:u.value,
     storeId:s.value,
@@ -253,55 +225,69 @@ function addUser(){
 
 /* RENDER */
 function render(){
-  list.innerHTML="";
   const q=search.value.toLowerCase();
   const f=filter.value;
-  const today=new Date().toISOString().slice(0,10);
+  list.innerHTML="";
+  const now=new Date();
 
   Object.keys(USERS).forEach(id=>{
     const u=USERS[id];
-    const aktif=u.expired>=today;
-    if(q && !u.storeId.toLowerCase().includes(q)) return;
-    if(f==="aktif" && !aktif) return;
-    if(f==="expired" && aktif) return;
+    const exp=new Date(u.expired);
+    const diff=Math.ceil((exp-now)/86400000);
+
+    if(q && !u.username.toLowerCase().includes(q) && !u.storeId.toLowerCase().includes(q)) return;
+    if(f==="active" && diff<=0) return;
+    if(f==="expired" && diff>0) return;
+    if(f==="soon" && (diff>7 || diff<=0)) return;
+
+    let status=`<span class="small" style="color:var(--ok)">Aktif</span>`;
+    if(diff<=0) status=`<span class="small" style="color:var(--danger)">Expired</span>`;
+    else if(diff<=7) status=`<span class="small" style="color:var(--warn)">Hampir Expired (${diff} hari)</span>`;
 
     list.innerHTML+=`
-    <tr>
-      <td>${u.storeId}</td>
-      <td>${u.expired}</td>
-      <td class="${aktif?'status-aktif':'status-expired'}">${aktif?'Aktif':'Expired'}</td>
-      <td>${u.deviceId?'🔒 Locked':'🟢 Free'}</td>
-      <td>
-        <button class="warning" onclick="extend('${id}','${u.expired}')">Edit</button>
-        <button class="secondary" onclick="reset('${id}')">Reset</button>
-        <button class="danger" onclick="del('${id}')">Hapus</button>
-      </td>
-    </tr>`;
+<tr>
+<td>${u.username}</td>
+<td>${u.storeId}</td>
+<td>${u.expired}</td>
+<td>${status}</td>
+<td>
+<button class="warning" onclick="editUser('${id}')">Edit</button>
+<button class="gray" onclick="resetDevice('${id}')">Reset</button>
+<button class="danger" onclick="delUser('${id}')">Hapus</button>
+</td>
+</tr>`;
   });
 }
 
-/* EXTEND */
-function extend(id,exp){
-  const add=prompt("Tambah masa aktif (hari):");
-  if(!add) return;
-  const base=new Date(exp>=new Date().toISOString().slice(0,10)?exp:new Date());
-  base.setDate(base.getDate()+parseInt(add));
-  db.ref("userList/"+id).update({expired:base.toISOString().slice(0,10)});
+/* EDIT */
+function editUser(id){
+  const dta=USERS[id];
+  const nu=prompt("Username:",dta.username);
+  const ns=prompt("Store ID:",dta.storeId);
+  const add=parseInt(prompt("Tambah masa aktif (hari):",0));
+
+  if(!nu||!ns) return;
+
+  let exp=new Date(dta.expired);
+  if(add>0) exp.setDate(exp.getDate()+add);
+
+  db.ref("userList/"+id).update({
+    username:nu.toUpperCase(),
+    storeId:ns.toUpperCase(),
+    expired:exp.toISOString().slice(0,10)
+  });
 }
 
-/* RESET */
-function reset(id){
+/* OTHER */
+function resetDevice(id){
   if(confirm("Reset device user?"))
     db.ref("userList/"+id).update({deviceId:null,lastLogin:null});
 }
-
-/* DELETE */
-function del(id){
-  if(confirm("Hapus user?")) db.ref("userList/"+id).remove();
+function delUser(id){
+  if(confirm("Hapus user?"))
+    db.ref("userList/"+id).remove();
 }
-
-/* LOGOUT */
-function logout(){location.reload();}
+function logout(){location.reload()}
 </script>
 
 </body>
