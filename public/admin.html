@@ -14,6 +14,7 @@
   --bg:#f3f4f6;
   --card:#ffffff;
   --text:#111827;
+  --muted:#6b7280;
   --border:#e5e7eb;
   --danger:#dc2626;
 }
@@ -26,7 +27,7 @@ body{
   color:var(--text);
 }
 
-/* ===== LOGIN ===== */
+/* LOGIN */
 .login-wrap{
   position:fixed;
   inset:0;
@@ -37,22 +38,15 @@ body{
 .login-card{
   width:100%;
   max-width:420px;
-  background:var(--card);
-  padding:40px 36px;
+  background:#fff;
+  padding:42px 38px;
   border-radius:18px;
   border:1px solid var(--border);
   box-shadow:0 20px 45px rgba(0,0,0,.08);
   text-align:center;
 }
-.login-card h1{
-  margin:0 0 6px;
-  font-size:26px;
-}
-.login-card p{
-  margin:0 0 26px;
-  color:#6b7280;
-  font-size:14px;
-}
+.login-card h1{margin:0 0 6px;font-size:26px}
+.login-card p{margin:0 0 26px;color:var(--muted);font-size:14px}
 .login-card input{
   width:100%;
   padding:14px;
@@ -74,7 +68,7 @@ body{
   cursor:pointer;
 }
 
-/* ===== PANEL ===== */
+/* PANEL */
 #panel{display:none}
 .container{max-width:1200px;margin:30px auto;padding:0 16px}
 .card{
@@ -91,8 +85,8 @@ input,button{padding:8px;border-radius:6px;border:1px solid #ccc}
 button{border:none;color:#fff;font-weight:600;cursor:pointer}
 .primary{background:var(--primary)}
 .warning{background:#f59e0b}
-.danger{background:var(--danger)}
 .gray{background:#6b7280}
+.danger{background:var(--danger)}
 .flex{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .badge{background:#eef2ff;padding:6px 14px;border-radius:999px;font-weight:600}
 </style>
@@ -114,6 +108,15 @@ button{border:none;color:#fff;font-weight:600;cursor:pointer}
 <div id="panel">
   <div class="container">
 
+    <!-- GREETING -->
+    <div class="card" style="background:#f8fafc">
+      <h3 style="margin:0 0 6px">👋 Selamat datang, <span id="adminName">Admin</span></h3>
+      <p style="margin:0;color:var(--muted);font-size:14px">
+        Semoga aktivitas hari ini berjalan lancar.
+      </p>
+    </div>
+
+    <!-- ADD USER -->
     <div class="card">
       <h3>➕ Tambah User</h3>
       <div class="flex">
@@ -125,6 +128,7 @@ button{border:none;color:#fff;font-weight:600;cursor:pointer}
       </div>
     </div>
 
+    <!-- TABLE -->
     <div class="card">
       <table>
         <thead>
@@ -141,67 +145,70 @@ button{border:none;color:#fff;font-weight:600;cursor:pointer}
     </div>
 
     <button class="danger" onclick="logout()">Logout</button>
-
   </div>
 </div>
 
 <script>
-/* ===== FIREBASE (PUNYA WEB INI) ===== */
+/* FIREBASE — PROJECT YANG BENAR */
 firebase.initializeApp({
   apiKey: "AIzaSyAvl_paDtkaHgPM2F1PRtybh_EanGfDT_Q",
   databaseURL: "https://serversetoran-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "serversetoran"
 });
-const db=firebase.database();
+const db = firebase.database();
 
-/* ===== CONFIG ===== */
-const ADMIN_PIN="500000";
-let USERS={};
+/* CONFIG */
+const ADMIN_PIN = "500000";
+const ADMIN_NAME = "Pak Imron";
+let USERS = {};
+
+document.getElementById("adminName").innerText = ADMIN_NAME;
 
 /* LOGIN */
 function login(){
-  if(pin.value!==ADMIN_PIN) return alert("PIN salah");
+  if(pin.value !== ADMIN_PIN) return alert("PIN salah");
   loginBox.style.display="none";
   panel.style.display="block";
   load();
 }
 
-/* LOAD */
+/* LOAD USERS */
 function load(){
-  db.ref("userList").on("value",s=>{
-    USERS=s.val()||{};
-    total.innerText=Object.keys(USERS).length;
+  db.ref("userList").on("value", s=>{
+    USERS = s.val() || {};
+    total.innerText = Object.keys(USERS).length;
     render();
   });
 }
 
-/* ADD */
+/* ADD USER */
 function addUser(){
-  const days=parseInt(d.value);
-  if(!u.value||!s.value||!days) return alert("Lengkapi data");
+  const days = parseInt(d.value);
+  if(!u.value || !s.value || !days) return alert("Lengkapi data");
 
-  const exp=new Date();
-  exp.setDate(exp.getDate()+days);
+  const exp = new Date();
+  exp.setDate(exp.getDate() + days);
 
   db.ref("userList").push({
-    username:u.value,
-    storeId:s.value,
-    expired:exp.toISOString().slice(0,10)
+    username: u.value,
+    storeId: s.value,
+    expired: exp.toISOString().slice(0,10)
   });
-  u.value=s.value=d.value="";
+
+  u.value = s.value = d.value = "";
 }
 
-/* RENDER */
+/* RENDER TABLE */
 function render(){
   list.innerHTML="";
   Object.keys(USERS).forEach(id=>{
-    const u=USERS[id];
-    list.innerHTML+=`
+    const u = USERS[id];
+    list.innerHTML += `
 <tr>
 <td>${u.username}</td>
 <td>${u.storeId}</td>
 <td>${u.expired}</td>
-<td>${u.deviceId?"🔒":"-"}</td>
+<td>${u.deviceId ? "🔒" : "-"}</td>
 <td>
 <button class="warning" onclick="editUser('${id}')">Edit</button>
 <button class="gray" onclick="resetDevice('${id}')">Reset</button>
@@ -213,21 +220,21 @@ function render(){
 
 /* EDIT — TAMBAH MASA AKTIF */
 function editUser(id){
-  const dta=USERS[id];
-  const nu=prompt("Username:",dta.username);
-  const ns=prompt("Store ID:",dta.storeId);
-  const add=parseInt(prompt("Tambah masa aktif (hari):",0));
+  const data = USERS[id];
+  const nu = prompt("Username:", data.username);
+  const ns = prompt("Store ID:", data.storeId);
+  const add = parseInt(prompt("Tambah masa aktif (hari):", 0));
 
-  let exp=new Date(dta.expired);
-  if(add>0) exp.setDate(exp.getDate()+add);
+  if(!nu || !ns) return;
 
-  if(nu&&ns){
-    db.ref("userList/"+id).update({
-      username:nu.toUpperCase(),
-      storeId:ns.toUpperCase(),
-      expired:exp.toISOString().slice(0,10)
-    });
-  }
+  let exp = new Date(data.expired);
+  if(add > 0) exp.setDate(exp.getDate() + add);
+
+  db.ref("userList/"+id).update({
+    username: nu.toUpperCase(),
+    storeId: ns.toUpperCase(),
+    expired: exp.toISOString().slice(0,10)
+  });
 }
 
 /* OTHERS */
