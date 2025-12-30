@@ -2,113 +2,84 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<title>Admin Panel - User Manager</title>
+<title>Admin Panel</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
 
 <style>
-body{font-family:Arial;background:#eef2f6;margin:0}
+body{
+  margin:0;
+  font-family:Arial;
+  background:linear-gradient(135deg,#e3f2fd,#f8fbff);
+}
 
-/* ===== LOGIN CENTER FIX ===== */
+/* LOGIN */
 .login-wrap{
   position:fixed;
   inset:0;
   display:flex;
   align-items:center;
   justify-content:center;
-  background:#eef2f6;
-  z-index:10;
 }
 .login-card{
+  width:100%;
+  max-width:420px;
   background:#fff;
-  width:100%;
-  max-width:360px;
-  padding:25px;
-  border-radius:12px;
-  box-shadow:0 8px 25px rgba(0,0,0,.12);
+  padding:38px;
+  border-radius:18px;
+  box-shadow:0 15px 40px rgba(30,136,229,.18);
+  text-align:center;
 }
-.login-card h2{text-align:center;margin-top:0}
-.login-card input, .login-card button{
+.login-card h2{margin:10px 0;font-size:24px}
+.login-card input{
   width:100%;
-  padding:11px;
-  margin-top:10px;
-  border-radius:6px;
+  padding:14px;
+  border-radius:10px;
+  border:1px solid #ccc;
+  font-size:15px;
 }
-.login-card input{border:1px solid #ccc}
 .login-card button{
+  width:100%;
+  margin-top:18px;
+  padding:14px;
   border:none;
-  background:#1e88e5;
+  border-radius:10px;
+  background:linear-gradient(135deg,#1e88e5,#1565c0);
   color:#fff;
-  font-weight:bold;
+  font-size:15px;
+  font-weight:700;
   cursor:pointer;
 }
 
-/* ===== LAYOUT ===== */
-.container{max-width:1200px;margin:30px auto;padding:0 15px}
+/* PANEL */
+.container{max-width:1200px;margin:30px auto;padding:15px}
 .card{
   background:#fff;
-  border-radius:10px;
+  border-radius:12px;
   padding:20px;
-  box-shadow:0 4px 12px rgba(0,0,0,.08);
-  margin-bottom:20px
+  box-shadow:0 6px 20px rgba(0,0,0,.08)
 }
-h2,h3{margin-top:0}
+.hidden{display:none}
 table{width:100%;border-collapse:collapse}
-th,td{
-  padding:10px;
-  border-bottom:1px solid #e0e0e0;
-  font-size:14px
-}
-th{background:#f5f7fa}
-input,button{
-  padding:9px 12px;
-  border-radius:6px;
-  border:1px solid #ccc;
-  font-size:14px
-}
-button{cursor:pointer;border:none;color:#fff;font-weight:600}
+th,td{padding:10px;border-bottom:1px solid #eee;font-size:14px}
+th{background:#f5f5f5}
+input,button{padding:8px;border-radius:6px;border:1px solid #ccc}
+button{border:none;color:#fff;font-weight:600;cursor:pointer}
 .success{background:#43a047}
 .warning{background:#fb8c00}
 .danger{background:#e53935}
 .secondary{background:#546e7a}
-.flex{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-.hidden{display:none}
-.badge{
-  background:#e8f1ff;
-  color:#1e88e5;
-  padding:6px 14px;
-  border-radius:20px;
-  font-size:13px;
-  font-weight:600
-}
-.small{font-size:12px;color:#666}
-.header{
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-}
-.upper{text-transform:uppercase}
-
-/* ===== MODAL EDIT ===== */
-.modal{
-  position:fixed;
-  inset:0;
-  background:rgba(0,0,0,.45);
-  display:none;
-  align-items:center;
-  justify-content:center;
-  z-index:20;
-}
-.modal .card{width:360px}
+.flex{display:flex;gap:10px;flex-wrap:wrap}
+.badge{background:#e3f2fd;padding:6px 14px;border-radius:20px;font-weight:600}
 </style>
 </head>
 
 <body>
 
 <!-- LOGIN -->
-<div class="login-wrap" id="login">
+<div id="login" class="login-wrap">
   <div class="login-card">
     <h2>🔐 Admin Login</h2>
     <input id="pin" type="password" placeholder="Masukkan PIN Admin">
@@ -117,33 +88,24 @@ button{cursor:pointer;border:none;color:#fff;font-weight:600}
 </div>
 
 <!-- PANEL -->
-<div id="panel" class="hidden">
-<div class="container">
-
-  <div class="card header">
-    <h2>🧑‍💼 Admin Panel</h2>
-    <button class="danger" onclick="logout()">Logout</button>
-  </div>
-
-  <!-- ADD USER -->
+<div id="panel" class="container hidden">
   <div class="card">
+    <h2>🧑‍💼 Admin Panel</h2>
+
+    <!-- ADD USER -->
     <h3>➕ Tambah User</h3>
     <div class="flex">
-      <input id="u" class="upper" placeholder="USERNAME" oninput="this.value=this.value.toUpperCase()">
-      <input id="s" class="upper" placeholder="STORE ID" oninput="this.value=this.value.toUpperCase()">
-      <input id="d" type="number" min="1" placeholder="Masa aktif (hari)">
+      <input id="u" placeholder="USERNAME" oninput="this.value=this.value.toUpperCase()">
+      <input id="s" placeholder="STORE ID" oninput="this.value=this.value.toUpperCase()">
+      <input id="d" type="number" placeholder="Masa aktif (hari)">
       <button class="success" onclick="addUser()">Tambah</button>
     </div>
-  </div>
 
-  <!-- LIST -->
-  <div class="card">
-    <div class="flex" style="margin-bottom:10px">
-      <input id="search" placeholder="🔎 Cari username / store ID" oninput="renderTable()">
-      <span class="badge">👥 Total User: <span id="total">0</span></span>
+    <div class="flex" style="margin-top:20px">
+      <span class="badge">Total User: <span id="total">0</span></span>
     </div>
 
-    <table>
+    <table style="margin-top:15px">
       <thead>
         <tr>
           <th>Username</th>
@@ -155,40 +117,27 @@ button{cursor:pointer;border:none;color:#fff;font-weight:600}
       </thead>
       <tbody id="list"></tbody>
     </table>
-  </div>
 
-</div>
-</div>
-
-<!-- MODAL EDIT -->
-<div class="modal" id="editModal">
-  <div class="card">
-    <h3>Edit User</h3>
-    <input id="eu" class="upper" oninput="this.value=this.value.toUpperCase()">
-    <input id="es" class="upper" oninput="this.value=this.value.toUpperCase()">
-    <input id="ed" type="number" min="1" placeholder="Masa aktif (hari)">
-    <div class="flex">
-      <button class="success" onclick="saveEdit()">Simpan</button>
-      <button class="secondary" onclick="editModal.style.display='none'">Batal</button>
-    </div>
+    <button class="danger" style="margin-top:20px" onclick="logout()">Logout</button>
   </div>
 </div>
 
 <script>
 /* FIREBASE */
 firebase.initializeApp({
-  apiKey:"AIzaSyAvl_paDtkaHgPM2F1PRtybh_EanGfDT_Q",
-  databaseURL:"https://serversetoran-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId:"serversetoran"
+  apiKey: "AIzaSyCld9VE6XdF-tbcv1E-gBZ2ACeJBklW-Go",
+  databaseURL: "https://server-laporan-default-rtdb.asia-southeast1.firebasedatabase.app"
 });
-const db=firebase.database();
+const db = firebase.database();
+
+/* CONFIG */
 const ADMIN_PIN="500000";
-let USERS={},EDIT_ID=null;
+let USERS={};
 
 /* LOGIN */
 function loginAdmin(){
   if(pin.value!==ADMIN_PIN) return alert("PIN salah");
-  login.style.display="none";
+  login.classList.add("hidden");
   panel.classList.remove("hidden");
   loadUsers();
 }
@@ -198,72 +147,80 @@ function loadUsers(){
   db.ref("userList").on("value",s=>{
     USERS=s.val()||{};
     total.innerText=Object.keys(USERS).length;
-    renderTable();
+    render();
   });
 }
 
-/* RENDER */
-function renderTable(){
-  const q=search.value.toLowerCase();
-  list.innerHTML="";
-  Object.keys(USERS).forEach(id=>{
-    const u=USERS[id];
-    if(q && !u.username.toLowerCase().includes(q) && !u.storeId.toLowerCase().includes(q)) return;
-    list.innerHTML+=`
-<tr>
-<td>${u.username}</td>
-<td>${u.storeId}</td>
-<td>${u.expired}</td>
-<td>${u.deviceId?"🔒":"🟢"}</td>
-<td>
-<button class="warning" onclick="openEdit('${id}')">Edit</button>
-<button class="secondary" onclick="resetDevice('${id}','${u.username}')">Reset</button>
-<button class="danger" onclick="delUser('${id}')">Hapus</button>
-</td>
-</tr>`;
-  });
-}
-
-/* ADD */
+/* ADD USER */
 function addUser(){
-  if(!u.value||!s.value||!d.value) return alert("Lengkapi data");
-  const ex=new Date(); ex.setDate(ex.getDate()+parseInt(d.value));
+  const days=parseInt(d.value);
+  if(!u.value||!s.value||!days) return alert("Lengkapi data");
+
+  const exp=new Date();
+  exp.setDate(exp.getDate()+days);
+
   db.ref("userList").push({
     username:u.value,
     storeId:s.value,
-    activeDays:parseInt(d.value),
-    expired:ex.toISOString().split("T")[0]
+    expired:exp.toISOString().slice(0,10)
   });
+
   u.value=s.value=d.value="";
 }
 
-/* EDIT */
-function openEdit(id){
-  const u=USERS[id];
-  EDIT_ID=id;
-  eu.value=u.username;
-  es.value=u.storeId;
-  ed.value=u.activeDays||"";
-  editModal.style.display="flex";
-}
-function saveEdit(){
-  if(!eu.value||!es.value||!ed.value) return alert("Lengkapi data");
-  const ex=new Date(); ex.setDate(ex.getDate()+parseInt(ed.value));
-  db.ref("userList/"+EDIT_ID).update({
-    username:eu.value,
-    storeId:es.value,
-    activeDays:parseInt(ed.value),
-    expired:ex.toISOString().split("T")[0]
+/* RENDER */
+function render(){
+  list.innerHTML="";
+  Object.keys(USERS).forEach(id=>{
+    const u=USERS[id];
+    list.innerHTML+=`
+      <tr>
+        <td>${u.username}</td>
+        <td>${u.storeId}</td>
+        <td>${u.expired}</td>
+        <td>${u.deviceId?"🔒 Terkunci":"🟢 Bebas"}</td>
+        <td>
+          <button class="warning" onclick="editUser('${id}')">Edit</button>
+          <button class="secondary" onclick="resetDevice('${id}')">Reset</button>
+          <button class="danger" onclick="delUser('${id}')">Hapus</button>
+        </td>
+      </tr>`;
   });
-  editModal.style.display="none";
 }
 
-/* OTHER */
-function delUser(id){confirm("Hapus user?")&&db.ref("userList/"+id).remove();}
-function resetDevice(id,n){
-  confirm(`Reset device ${n}?`)&&db.ref("userList/"+id).update({deviceId:null,lastLogin:null});
+/* EDIT USER — TAMBAH MASA AKTIF */
+function editUser(id){
+  const data=USERS[id];
+  const nu=prompt("Username:",data.username);
+  const ns=prompt("Store ID:",data.storeId);
+  const add=parseInt(prompt("Tambah masa aktif (hari):",0));
+
+  if(!nu||!ns) return;
+
+  let exp=new Date(data.expired);
+  if(add>0) exp.setDate(exp.getDate()+add);
+
+  db.ref("userList/"+id).update({
+    username:nu.toUpperCase(),
+    storeId:ns.toUpperCase(),
+    expired:exp.toISOString().slice(0,10)
+  });
 }
-function logout(){location.reload();}
+
+/* RESET DEVICE */
+function resetDevice(id){
+  if(confirm("Reset device user?"))
+    db.ref("userList/"+id).update({deviceId:null,lastLogin:null});
+}
+
+/* DELETE */
+function delUser(id){
+  if(confirm("Hapus user?"))
+    db.ref("userList/"+id).remove();
+}
+
+/* LOGOUT */
+function logout(){location.reload()}
 </script>
 
 </body>
