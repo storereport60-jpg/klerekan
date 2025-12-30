@@ -17,6 +17,8 @@
   --muted:#6b7280;
   --border:#e5e7eb;
   --danger:#dc2626;
+  --warn:#f59e0b;
+  --ok:#16a34a;
 }
 
 *{box-sizing:border-box}
@@ -81,14 +83,15 @@ body{
 table{width:100%;border-collapse:collapse}
 th,td{padding:10px;border-bottom:1px solid var(--border);font-size:14px}
 th{background:#f9fafb}
-input,button{padding:8px;border-radius:6px;border:1px solid #ccc}
+input,select,button{padding:8px;border-radius:6px;border:1px solid #ccc}
 button{border:none;color:#fff;font-weight:600;cursor:pointer}
 .primary{background:var(--primary)}
-.warning{background:#f59e0b}
+.warning{background:var(--warn)}
 .gray{background:#6b7280}
 .danger{background:var(--danger)}
 .flex{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .badge{background:#eef2ff;padding:6px 14px;border-radius:999px;font-weight:600}
+.small{font-size:12px;color:var(--muted)}
 </style>
 </head>
 
@@ -110,7 +113,7 @@ button{border:none;color:#fff;font-weight:600;cursor:pointer}
 
     <!-- GREETING -->
     <div class="card" style="background:#f8fafc">
-      <h3 style="margin:0 0 6px">👋 Selamat datang, <span id="adminName">Admin</span></h3>
+      <h3 id="greeting" style="margin:0 0 6px"></h3>
       <p style="margin:0;color:var(--muted);font-size:14px">
         Semoga aktivitas hari ini berjalan lancar.
       </p>
@@ -128,6 +131,19 @@ button{border:none;color:#fff;font-weight:600;cursor:pointer}
       </div>
     </div>
 
+    <!-- SEARCH & FILTER -->
+    <div class="card">
+      <div class="flex">
+        <input id="search" placeholder="🔍 Cari username / store ID" oninput="render()">
+        <select id="filter" onchange="render()">
+          <option value="all">Semua</option>
+          <option value="active">Aktif</option>
+          <option value="soon">Hampir Expired (≤7 hari)</option>
+          <option value="expired">Expired</option>
+        </select>
+      </div>
+    </div>
+
     <!-- TABLE -->
     <div class="card">
       <table>
@@ -136,7 +152,7 @@ button{border:none;color:#fff;font-weight:600;cursor:pointer}
             <th>User</th>
             <th>Store</th>
             <th>Expired</th>
-            <th>Device</th>
+            <th>Status</th>
             <th>Aksi</th>
           </tr>
         </thead>
@@ -149,7 +165,7 @@ button{border:none;color:#fff;font-weight:600;cursor:pointer}
 </div>
 
 <script>
-/* FIREBASE — PROJECT YANG BENAR */
+/* FIREBASE */
 firebase.initializeApp({
   apiKey: "AIzaSyAvl_paDtkaHgPM2F1PRtybh_EanGfDT_Q",
   databaseURL: "https://serversetoran-default-rtdb.asia-southeast1.firebasedatabase.app",
@@ -158,57 +174,82 @@ firebase.initializeApp({
 const db = firebase.database();
 
 /* CONFIG */
-const ADMIN_PIN = "500000";
-const ADMIN_NAME = "Pak Imron";
-let USERS = {};
+const ADMIN_PIN="500000";
+const ADMIN_NAME="Pak Imron";
+let USERS={};
 
-document.getElementById("adminName").innerText = ADMIN_NAME;
+/* GREETING BY TIME */
+function setGreeting(){
+  const h=new Date().getHours();
+  let g="Selamat datang";
+  if(h<11) g="Selamat pagi";
+  else if(h<15) g="Selamat siang";
+  else if(h<18) g="Selamat sore";
+  else g="Selamat malam";
+  greeting.innerText=`👋 ${g}, ${ADMIN_NAME}`;
+}
 
 /* LOGIN */
 function login(){
-  if(pin.value !== ADMIN_PIN) return alert("PIN salah");
+  if(pin.value!==ADMIN_PIN) return alert("PIN salah");
   loginBox.style.display="none";
   panel.style.display="block";
+  setGreeting();
   load();
 }
 
-/* LOAD USERS */
+/* LOAD */
 function load(){
-  db.ref("userList").on("value", s=>{
-    USERS = s.val() || {};
-    total.innerText = Object.keys(USERS).length;
+  db.ref("userList").on("value",s=>{
+    USERS=s.val()||{};
+    total.innerText=Object.keys(USERS).length;
     render();
   });
 }
 
 /* ADD USER */
 function addUser(){
-  const days = parseInt(d.value);
-  if(!u.value || !s.value || !days) return alert("Lengkapi data");
+  const days=parseInt(d.value);
+  if(!u.value||!s.value||!days) return alert("Lengkapi data");
 
-  const exp = new Date();
-  exp.setDate(exp.getDate() + days);
+  const exp=new Date();
+  exp.setDate(exp.getDate()+days);
 
   db.ref("userList").push({
-    username: u.value,
-    storeId: s.value,
-    expired: exp.toISOString().slice(0,10)
+    username:u.value,
+    storeId:s.value,
+    expired:exp.toISOString().slice(0,10)
   });
-
-  u.value = s.value = d.value = "";
+  u.value=s.value=d.value="";
 }
 
-/* RENDER TABLE */
+/* RENDER */
 function render(){
+  const q=search.value.toLowerCase();
+  const f=filter.value;
   list.innerHTML="";
+  const now=new Date();
+
   Object.keys(USERS).forEach(id=>{
-    const u = USERS[id];
-    list.innerHTML += `
+    const u=USERS[id];
+    const exp=new Date(u.expired);
+    const diff=Math.ceil((exp-now)/86400000);
+
+    if(q && !u.username.toLowerCase().includes(q) && !u.storeId.toLowerCase().includes(q)) return;
+    if(f==="active" && diff<=0) return;
+    if(f==="expired" && diff>0) return;
+    if(f==="soon" && (diff>7 || diff<=0)) return;
+
+    let status=`<span class="small" style="color:var(--ok)">Aktif</span>`;
+    if(diff<=0) status=`<span class="small" style="color:var(--danger)">Expired</span>`;
+    else if(diff<=7) status=`<span class="small" style="color:var(--warn)">Hampir Expired (${diff} hari)</span>`;
+
+    list.innerHTML+=`
 <tr>
 <td>${u.username}</td>
 <td>${u.storeId}</td>
 <td>${u.expired}</td>
-<td>${u.deviceId ? "🔒" : "-"}</td>
+<td>${status}</td>
 <td>
 <button class="warning" onclick="editUser('${id}')">Edit</button>
 <button class="gray" onclick="resetDevice('${id}')">Reset</button>
@@ -218,26 +259,26 @@ function render(){
   });
 }
 
-/* EDIT — TAMBAH MASA AKTIF */
+/* EDIT */
 function editUser(id){
-  const data = USERS[id];
-  const nu = prompt("Username:", data.username);
-  const ns = prompt("Store ID:", data.storeId);
-  const add = parseInt(prompt("Tambah masa aktif (hari):", 0));
+  const dta=USERS[id];
+  const nu=prompt("Username:",dta.username);
+  const ns=prompt("Store ID:",dta.storeId);
+  const add=parseInt(prompt("Tambah masa aktif (hari):",0));
 
-  if(!nu || !ns) return;
+  if(!nu||!ns) return;
 
-  let exp = new Date(data.expired);
-  if(add > 0) exp.setDate(exp.getDate() + add);
+  let exp=new Date(dta.expired);
+  if(add>0) exp.setDate(exp.getDate()+add);
 
   db.ref("userList/"+id).update({
-    username: nu.toUpperCase(),
-    storeId: ns.toUpperCase(),
-    expired: exp.toISOString().slice(0,10)
+    username:nu.toUpperCase(),
+    storeId:ns.toUpperCase(),
+    expired:exp.toISOString().slice(0,10)
   });
 }
 
-/* OTHERS */
+/* OTHER */
 function resetDevice(id){
   if(confirm("Reset device user?"))
     db.ref("userList/"+id).update({deviceId:null,lastLogin:null});
