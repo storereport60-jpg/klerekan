@@ -5,17 +5,28 @@
 <title>Admin Panel</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.4/firebase-database-compat.js"></script>
 
 <style>
-body{
-  margin:0;
-  font-family:Arial;
-  background:linear-gradient(135deg,#e3f2fd,#f8fbff);
+:root{
+  --primary:#2563eb;
+  --bg:#f3f4f6;
+  --card:#ffffff;
+  --text:#111827;
+  --border:#e5e7eb;
+  --danger:#dc2626;
 }
 
-/* LOGIN */
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family:Inter,Segoe UI,Arial,sans-serif;
+  background:linear-gradient(180deg,#f8fafc,#eef2f7);
+  color:var(--text);
+}
+
+/* ===== LOGIN ===== */
 .login-wrap{
   position:fixed;
   inset:0;
@@ -26,124 +37,137 @@ body{
 .login-card{
   width:100%;
   max-width:420px;
-  background:#fff;
-  padding:38px;
+  background:var(--card);
+  padding:40px 36px;
   border-radius:18px;
-  box-shadow:0 15px 40px rgba(30,136,229,.18);
+  border:1px solid var(--border);
+  box-shadow:0 20px 45px rgba(0,0,0,.08);
   text-align:center;
 }
-.login-card h2{margin:10px 0;font-size:24px}
+.login-card h1{
+  margin:0 0 6px;
+  font-size:26px;
+}
+.login-card p{
+  margin:0 0 26px;
+  color:#6b7280;
+  font-size:14px;
+}
 .login-card input{
   width:100%;
   padding:14px;
+  font-size:16px;
+  text-align:center;
   border-radius:10px;
-  border:1px solid #ccc;
-  font-size:15px;
+  border:1px solid var(--border);
 }
 .login-card button{
-  width:100%;
   margin-top:18px;
-  padding:14px;
+  width:100%;
+  padding:12px;
   border:none;
   border-radius:10px;
-  background:linear-gradient(135deg,#1e88e5,#1565c0);
+  background:var(--primary);
   color:#fff;
   font-size:15px;
-  font-weight:700;
+  font-weight:600;
   cursor:pointer;
 }
 
-/* PANEL */
-.container{max-width:1200px;margin:30px auto;padding:15px}
+/* ===== PANEL ===== */
+#panel{display:none}
+.container{max-width:1200px;margin:30px auto;padding:0 16px}
 .card{
   background:#fff;
-  border-radius:12px;
-  padding:20px;
-  box-shadow:0 6px 20px rgba(0,0,0,.08)
+  border-radius:14px;
+  border:1px solid var(--border);
+  padding:22px;
+  margin-bottom:20px;
 }
-.hidden{display:none}
 table{width:100%;border-collapse:collapse}
-th,td{padding:10px;border-bottom:1px solid #eee;font-size:14px}
-th{background:#f5f5f5}
+th,td{padding:10px;border-bottom:1px solid var(--border);font-size:14px}
+th{background:#f9fafb}
 input,button{padding:8px;border-radius:6px;border:1px solid #ccc}
 button{border:none;color:#fff;font-weight:600;cursor:pointer}
-.success{background:#43a047}
-.warning{background:#fb8c00}
-.danger{background:#e53935}
-.secondary{background:#546e7a}
-.flex{display:flex;gap:10px;flex-wrap:wrap}
-.badge{background:#e3f2fd;padding:6px 14px;border-radius:20px;font-weight:600}
+.primary{background:var(--primary)}
+.warning{background:#f59e0b}
+.danger{background:var(--danger)}
+.gray{background:#6b7280}
+.flex{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.badge{background:#eef2ff;padding:6px 14px;border-radius:999px;font-weight:600}
 </style>
 </head>
 
 <body>
 
 <!-- LOGIN -->
-<div id="login" class="login-wrap">
+<div class="login-wrap" id="loginBox">
   <div class="login-card">
-    <h2>🔐 Admin Login</h2>
-    <input id="pin" type="password" placeholder="Masukkan PIN Admin">
-    <button onclick="loginAdmin()">LOGIN</button>
+    <h1>🔐 Admin Login</h1>
+    <p>Masukkan PIN Admin</p>
+    <input id="pin" type="password" maxlength="6" placeholder="••••••">
+    <button onclick="login()">Login</button>
   </div>
 </div>
 
 <!-- PANEL -->
-<div id="panel" class="container hidden">
-  <div class="card">
-    <h2>🧑‍💼 Admin Panel</h2>
+<div id="panel">
+  <div class="container">
 
-    <!-- ADD USER -->
-    <h3>➕ Tambah User</h3>
-    <div class="flex">
-      <input id="u" placeholder="USERNAME" oninput="this.value=this.value.toUpperCase()">
-      <input id="s" placeholder="STORE ID" oninput="this.value=this.value.toUpperCase()">
-      <input id="d" type="number" placeholder="Masa aktif (hari)">
-      <button class="success" onclick="addUser()">Tambah</button>
+    <div class="card">
+      <h3>➕ Tambah User</h3>
+      <div class="flex">
+        <input id="u" placeholder="USERNAME" oninput="this.value=this.value.toUpperCase()">
+        <input id="s" placeholder="STORE ID" oninput="this.value=this.value.toUpperCase()">
+        <input id="d" type="number" placeholder="Masa aktif (hari)">
+        <button class="primary" onclick="addUser()">Simpan</button>
+        <span class="badge">Total User: <span id="total">0</span></span>
+      </div>
     </div>
 
-    <div class="flex" style="margin-top:20px">
-      <span class="badge">Total User: <span id="total">0</span></span>
+    <div class="card">
+      <table>
+        <thead>
+          <tr>
+            <th>User</th>
+            <th>Store</th>
+            <th>Expired</th>
+            <th>Device</th>
+            <th>Aksi</th>
+          </tr>
+        </thead>
+        <tbody id="list"></tbody>
+      </table>
     </div>
 
-    <table style="margin-top:15px">
-      <thead>
-        <tr>
-          <th>Username</th>
-          <th>Store</th>
-          <th>Expired</th>
-          <th>Device</th>
-          <th>Aksi</th>
-        </tr>
-      </thead>
-      <tbody id="list"></tbody>
-    </table>
+    <button class="danger" onclick="logout()">Logout</button>
 
-    <button class="danger" style="margin-top:20px" onclick="logout()">Logout</button>
   </div>
 </div>
 
 <script>
-/* FIREBASE */
+/* ===== FIREBASE (PUNYA WEB INI) ===== */
 firebase.initializeApp({
-  apiKey: "AIzaSyCld9VE6XdF-tbcv1E-gBZ2ACeJBklW-Go",
-  databaseURL: "https://server-laporan-default-rtdb.asia-southeast1.firebasedatabase.app"
+  apiKey: "AIzaSyAvl_paDtkaHgPM2F1PRtybh_EanGfDT_Q",
+  databaseURL: "https://serversetoran-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "serversetoran"
 });
-const db = firebase.database();
+const db=firebase.database();
 
-/* CONFIG */
+/* ===== CONFIG ===== */
 const ADMIN_PIN="500000";
 let USERS={};
 
 /* LOGIN */
-function loginAdmin(){
+function login(){
   if(pin.value!==ADMIN_PIN) return alert("PIN salah");
-  login.classList.add("hidden");
-  panel.classList.remove("hidden");
-  loadUsers();
+  loginBox.style.display="none";
+  panel.style.display="block";
+  load();
 }
 
 /* LOAD */
-function loadUsers(){
+function load(){
   db.ref("userList").on("value",s=>{
     USERS=s.val()||{};
     total.innerText=Object.keys(USERS).length;
@@ -151,7 +175,7 @@ function loadUsers(){
   });
 }
 
-/* ADD USER */
+/* ADD */
 function addUser(){
   const days=parseInt(d.value);
   if(!u.value||!s.value||!days) return alert("Lengkapi data");
@@ -164,7 +188,6 @@ function addUser(){
     storeId:s.value,
     expired:exp.toISOString().slice(0,10)
   });
-
   u.value=s.value=d.value="";
 }
 
@@ -174,52 +197,48 @@ function render(){
   Object.keys(USERS).forEach(id=>{
     const u=USERS[id];
     list.innerHTML+=`
-      <tr>
-        <td>${u.username}</td>
-        <td>${u.storeId}</td>
-        <td>${u.expired}</td>
-        <td>${u.deviceId?"🔒 Terkunci":"🟢 Bebas"}</td>
-        <td>
-          <button class="warning" onclick="editUser('${id}')">Edit</button>
-          <button class="secondary" onclick="resetDevice('${id}')">Reset</button>
-          <button class="danger" onclick="delUser('${id}')">Hapus</button>
-        </td>
-      </tr>`;
+<tr>
+<td>${u.username}</td>
+<td>${u.storeId}</td>
+<td>${u.expired}</td>
+<td>${u.deviceId?"🔒":"-"}</td>
+<td>
+<button class="warning" onclick="editUser('${id}')">Edit</button>
+<button class="gray" onclick="resetDevice('${id}')">Reset</button>
+<button class="danger" onclick="delUser('${id}')">Hapus</button>
+</td>
+</tr>`;
   });
 }
 
-/* EDIT USER — TAMBAH MASA AKTIF */
+/* EDIT — TAMBAH MASA AKTIF */
 function editUser(id){
-  const data=USERS[id];
-  const nu=prompt("Username:",data.username);
-  const ns=prompt("Store ID:",data.storeId);
+  const dta=USERS[id];
+  const nu=prompt("Username:",dta.username);
+  const ns=prompt("Store ID:",dta.storeId);
   const add=parseInt(prompt("Tambah masa aktif (hari):",0));
 
-  if(!nu||!ns) return;
-
-  let exp=new Date(data.expired);
+  let exp=new Date(dta.expired);
   if(add>0) exp.setDate(exp.getDate()+add);
 
-  db.ref("userList/"+id).update({
-    username:nu.toUpperCase(),
-    storeId:ns.toUpperCase(),
-    expired:exp.toISOString().slice(0,10)
-  });
+  if(nu&&ns){
+    db.ref("userList/"+id).update({
+      username:nu.toUpperCase(),
+      storeId:ns.toUpperCase(),
+      expired:exp.toISOString().slice(0,10)
+    });
+  }
 }
 
-/* RESET DEVICE */
+/* OTHERS */
 function resetDevice(id){
   if(confirm("Reset device user?"))
     db.ref("userList/"+id).update({deviceId:null,lastLogin:null});
 }
-
-/* DELETE */
 function delUser(id){
   if(confirm("Hapus user?"))
     db.ref("userList/"+id).remove();
 }
-
-/* LOGOUT */
 function logout(){location.reload()}
 </script>
 
