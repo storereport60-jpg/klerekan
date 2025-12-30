@@ -11,33 +11,33 @@
 <style>
 body{font-family:Arial;background:#eef2f6;margin:0}
 
-/* ===== CENTER LOGIN ===== */
+/* ===== LOGIN CENTER FIX ===== */
 .login-wrap{
-  min-height:100vh;
+  position:fixed;
+  inset:0;
   display:flex;
   align-items:center;
   justify-content:center;
+  background:#eef2f6;
+  z-index:10;
 }
 .login-card{
   background:#fff;
   width:100%;
   max-width:360px;
   padding:25px;
-  border-radius:10px;
-  box-shadow:0 4px 15px rgba(0,0,0,.1);
+  border-radius:12px;
+  box-shadow:0 8px 25px rgba(0,0,0,.12);
 }
 .login-card h2{text-align:center;margin-top:0}
-.login-card input{
+.login-card input, .login-card button{
   width:100%;
-  padding:10px;
-  margin:10px 0;
+  padding:11px;
+  margin-top:10px;
   border-radius:6px;
-  border:1px solid #ccc;
 }
+.login-card input{border:1px solid #ccc}
 .login-card button{
-  width:100%;
-  padding:10px;
-  border-radius:6px;
   border:none;
   background:#1e88e5;
   color:#fff;
@@ -45,6 +45,7 @@ body{font-family:Arial;background:#eef2f6;margin:0}
   cursor:pointer;
 }
 
+/* ===== LAYOUT ===== */
 .container{max-width:1200px;margin:30px auto;padding:0 15px}
 .card{
   background:#fff;
@@ -83,24 +84,24 @@ button{cursor:pointer;border:none;color:#fff;font-weight:600}
   font-weight:600
 }
 .small{font-size:12px;color:#666}
-.welcome{
-  background:#f1f8ff;
-  border-left:5px solid #1e88e5;
-  padding:12px 15px;
-  border-radius:6px;
-  margin-bottom:20px;
-  font-size:14px
-}
 .header{
   display:flex;
   justify-content:space-between;
   align-items:center;
 }
+.upper{text-transform:uppercase}
 
-/* AUTO UPPER */
-.upper{
-  text-transform:uppercase;
+/* ===== MODAL EDIT ===== */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.45);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:20;
 }
+.modal .card{width:360px}
 </style>
 </head>
 
@@ -120,25 +121,19 @@ button{cursor:pointer;border:none;color:#fff;font-weight:600}
 <div class="container">
 
   <div class="card header">
-    <h2>🧑‍💼 Panel Administrator</h2>
+    <h2>🧑‍💼 Admin Panel</h2>
     <button class="danger" onclick="logout()">Logout</button>
-  </div>
-
-  <div class="welcome">
-    👋 <strong>Selamat datang Pak Imron</strong><br>
-    Semoga hari Anda menyenangkan dan seluruh pekerjaan berjalan lancar.
   </div>
 
   <!-- ADD USER -->
   <div class="card">
-    <h3>User Management</h3>
+    <h3>➕ Tambah User</h3>
     <div class="flex">
       <input id="u" class="upper" placeholder="USERNAME" oninput="this.value=this.value.toUpperCase()">
       <input id="s" class="upper" placeholder="STORE ID" oninput="this.value=this.value.toUpperCase()">
       <input id="d" type="number" min="1" placeholder="Masa aktif (hari)">
-      <button class="success" onclick="addUser()">Tambah User</button>
+      <button class="success" onclick="addUser()">Tambah</button>
     </div>
-    <div class="small">Contoh: isi <b>30</b> untuk aktif 30 hari</div>
   </div>
 
   <!-- LIST -->
@@ -165,6 +160,20 @@ button{cursor:pointer;border:none;color:#fff;font-weight:600}
 </div>
 </div>
 
+<!-- MODAL EDIT -->
+<div class="modal" id="editModal">
+  <div class="card">
+    <h3>Edit User</h3>
+    <input id="eu" class="upper" oninput="this.value=this.value.toUpperCase()">
+    <input id="es" class="upper" oninput="this.value=this.value.toUpperCase()">
+    <input id="ed" type="number" min="1" placeholder="Masa aktif (hari)">
+    <div class="flex">
+      <button class="success" onclick="saveEdit()">Simpan</button>
+      <button class="secondary" onclick="editModal.style.display='none'">Batal</button>
+    </div>
+  </div>
+</div>
+
 <script>
 /* FIREBASE */
 firebase.initializeApp({
@@ -174,12 +183,12 @@ firebase.initializeApp({
 });
 const db=firebase.database();
 const ADMIN_PIN="500000";
-let USERS={};
+let USERS={},EDIT_ID=null;
 
 /* LOGIN */
 function loginAdmin(){
   if(pin.value!==ADMIN_PIN) return alert("PIN salah");
-  login.classList.add("hidden");
+  login.style.display="none";
   panel.classList.remove("hidden");
   loadUsers();
 }
@@ -207,7 +216,7 @@ function renderTable(){
 <td>${u.expired}</td>
 <td>${u.deviceId?"🔒":"🟢"}</td>
 <td>
-<button class="warning" onclick="editUser('${id}')">Edit</button>
+<button class="warning" onclick="openEdit('${id}')">Edit</button>
 <button class="secondary" onclick="resetDevice('${id}','${u.username}')">Reset</button>
 <button class="danger" onclick="delUser('${id}')">Hapus</button>
 </td>
@@ -215,30 +224,42 @@ function renderTable(){
   });
 }
 
-/* CRUD */
+/* ADD */
 function addUser(){
   if(!u.value||!s.value||!d.value) return alert("Lengkapi data");
-  const days=parseInt(d.value);
-  const ex=new Date(); ex.setDate(ex.getDate()+days);
+  const ex=new Date(); ex.setDate(ex.getDate()+parseInt(d.value));
   db.ref("userList").push({
     username:u.value,
     storeId:s.value,
-    activeDays:days,
-    expired:ex.toISOString().split("T")[0],
-    active:true
+    activeDays:parseInt(d.value),
+    expired:ex.toISOString().split("T")[0]
   });
   u.value=s.value=d.value="";
 }
-function delUser(id){confirm("Hapus user?")&&db.ref("userList/"+id).remove();}
-function editUser(id){
-  const days=prompt("Perpanjang berapa hari?");
-  if(!days) return;
-  const ex=new Date(); ex.setDate(ex.getDate()+parseInt(days));
-  db.ref("userList/"+id).update({
-    activeDays:parseInt(days),
+
+/* EDIT */
+function openEdit(id){
+  const u=USERS[id];
+  EDIT_ID=id;
+  eu.value=u.username;
+  es.value=u.storeId;
+  ed.value=u.activeDays||"";
+  editModal.style.display="flex";
+}
+function saveEdit(){
+  if(!eu.value||!es.value||!ed.value) return alert("Lengkapi data");
+  const ex=new Date(); ex.setDate(ex.getDate()+parseInt(ed.value));
+  db.ref("userList/"+EDIT_ID).update({
+    username:eu.value,
+    storeId:es.value,
+    activeDays:parseInt(ed.value),
     expired:ex.toISOString().split("T")[0]
   });
+  editModal.style.display="none";
 }
+
+/* OTHER */
+function delUser(id){confirm("Hapus user?")&&db.ref("userList/"+id).remove();}
 function resetDevice(id,n){
   confirm(`Reset device ${n}?`)&&db.ref("userList/"+id).update({deviceId:null,lastLogin:null});
 }
