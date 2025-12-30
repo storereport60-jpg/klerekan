@@ -8,12 +8,13 @@
 <style>
 :root{
   --primary:#2563eb;
-  --bg:#f3f4f6;
+  --bg:#f4f6f8;
   --card:#ffffff;
-  --text:#111827;
-  --muted:#6b7280;
+  --text:#0f172a;
+  --muted:#64748b;
   --border:#e5e7eb;
   --danger:#dc2626;
+  --radius:14px;
 }
 *{box-sizing:border-box}
 body{
@@ -23,7 +24,7 @@ body{
   color:var(--text);
 }
 
-/* ===== LOGIN PIN ===== */
+/* ===== LOGIN ===== */
 .login-wrap{
   min-height:100vh;
   display:flex;
@@ -33,13 +34,14 @@ body{
 .login-card{
   background:#fff;
   width:100%;
-  max-width:360px;
+  max-width:380px;
   padding:32px;
-  border-radius:16px;
+  border-radius:18px;
   border:1px solid var(--border);
+  box-shadow:0 20px 40px rgba(0,0,0,.08);
 }
 .login-card h1{text-align:center;margin:0 0 6px}
-.login-card p{text-align:center;color:var(--muted);margin:0 0 20px}
+.login-card p{text-align:center;color:var(--muted);margin-bottom:20px}
 .login-card input{
   width:100%;
   padding:14px;
@@ -62,40 +64,63 @@ body{
 }
 .error{text-align:center;color:var(--danger);font-size:14px}
 
-/* ===== ADMIN PANEL ===== */
+/* ===== DASHBOARD ===== */
 #adminApp{display:none}
 .header{
   background:#fff;
   border-bottom:1px solid var(--border);
-  padding:16px 20px;
+  padding:16px 24px;
   display:flex;
   justify-content:space-between;
   align-items:center;
 }
+.header h3{margin:0}
 .container{
-  max-width:1100px;
+  max-width:1200px;
   margin:30px auto;
   padding:0 16px;
 }
+.grid{
+  display:grid;
+  grid-template-columns:1fr 3fr;
+  gap:20px;
+}
 .card{
   background:#fff;
-  border-radius:14px;
+  border-radius:var(--radius);
   border:1px solid var(--border);
   padding:20px;
-  margin-bottom:20px;
 }
-table{width:100%;border-collapse:collapse}
-th,td{padding:10px;border-bottom:1px solid var(--border);font-size:13px}
+.card h3{margin-top:0}
+
+/* ===== FORM ===== */
+input,select{
+  width:100%;
+  padding:12px;
+  border-radius:10px;
+  border:1px solid var(--border);
+  margin-bottom:10px;
+}
 button.small{
-  padding:6px 10px;
+  padding:6px 12px;
   font-size:12px;
   border:none;
-  border-radius:6px;
+  border-radius:8px;
   cursor:pointer;
 }
 .primary{background:var(--primary);color:#fff}
 .danger{background:var(--danger);color:#fff}
-.gray{background:#f3f4f6}
+.gray{background:#f1f5f9}
+
+/* ===== TABLE ===== */
+.table-wrap{overflow:auto}
+table{width:100%;border-collapse:collapse}
+th,td{
+  padding:10px;
+  border-bottom:1px solid var(--border);
+  font-size:13px;
+}
+th{text-align:left;color:var(--muted)}
 .badge{
   padding:4px 10px;
   border-radius:999px;
@@ -103,62 +128,114 @@ button.small{
 }
 .on{background:#dcfce7;color:#166534}
 .off{background:#fee2e2;color:#991b1b}
+
+/* ===== TOP BAR ===== */
+.topbar{
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  margin-bottom:12px;
+}
+.counter{
+  background:#eff6ff;
+  color:#1e40af;
+  padding:8px 14px;
+  border-radius:999px;
+  font-size:13px;
+}
+
+/* ===== MODAL ===== */
+.modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.4);
+  display:none;
+  align-items:center;
+  justify-content:center;
+}
+.modal .card{width:360px}
 </style>
 </head>
 
 <body>
 
-<!-- ===== LOGIN PIN ===== -->
+<!-- LOGIN -->
 <div class="login-wrap" id="loginBox">
   <div class="login-card">
     <h1>🔐 Admin Panel</h1>
     <p>Masukkan PIN Admin</p>
-    <input id="pin" type="password" maxlength="6" inputmode="numeric" placeholder="••••••">
+    <input id="pin" type="password" maxlength="6" inputmode="numeric">
     <button onclick="loginAdmin()">Masuk</button>
     <div class="error" id="err"></div>
   </div>
 </div>
 
-<!-- ===== ADMIN APP ===== -->
+<!-- APP -->
 <div id="adminApp">
   <div class="header">
-    <h3>Admin Panel</h3>
+    <h3>Admin Dashboard</h3>
     <button class="small danger" onclick="logout()">Logout</button>
   </div>
 
   <div class="container">
+    <div class="grid">
 
-    <div class="card">
-      <h3>➕ Tambah User</h3>
-      <form id="addForm">
-        <input id="u" placeholder="USERNAME" required>
-        <input id="s" placeholder="STORE ID" required>
-        <input id="e" type="date" required>
-        <select id="r">
-          <option value="user">USER</option>
-          <option value="admin">ADMIN</option>
-        </select>
-        <button class="small primary">Simpan</button>
-      </form>
+      <!-- ADD USER -->
+      <div class="card">
+        <h3>➕ Tambah User</h3>
+        <form id="addForm">
+          <input id="u" placeholder="USERNAME" required>
+          <input id="s" placeholder="STORE ID" required>
+          <input id="exp" type="date" required>
+          <select id="r">
+            <option value="user">USER</option>
+            <option value="admin">ADMIN</option>
+          </select>
+          <button class="small primary">Simpan User</button>
+        </form>
+      </div>
+
+      <!-- USER LIST -->
+      <div class="card">
+        <div class="topbar">
+          <input id="search" placeholder="🔍 Cari user / store..." style="max-width:240px">
+          <div class="counter">Total User: <b id="total">0</b></div>
+        </div>
+
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Store</th>
+                <th>Expired</th>
+                <th>Device</th>
+                <th>Status</th>
+                <th>Aksi</th>
+              </tr>
+            </thead>
+            <tbody id="list"></tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
+  </div>
+</div>
 
-    <div class="card">
-      <h3>📋 Daftar User</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>User</th>
-            <th>Store</th>
-            <th>Expired</th>
-            <th>Device</th>
-            <th>Status</th>
-            <th>Aksi</th>
-          </tr>
-        </thead>
-        <tbody id="list"></tbody>
-      </table>
-    </div>
-
+<!-- MODAL EDIT -->
+<div class="modal" id="editModal">
+  <div class="card">
+    <h3>Edit User</h3>
+    <input id="eu">
+    <input id="es">
+    <input id="eexp" type="date">
+    <select id="er">
+      <option value="user">USER</option>
+      <option value="admin">ADMIN</option>
+    </select>
+    <button class="small primary" onclick="saveEdit()">Simpan</button>
+    <button class="small gray" onclick="editModal.style.display='none'">Batal</button>
   </div>
 </div>
 
@@ -166,40 +243,48 @@ button.small{
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
 import { getDatabase, ref, onValue, push, update, remove } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
-/* ===== PIN ADMIN ===== */
-const ADMIN_PIN = "500000";
-
-/* ===== FIREBASE CONFIG (PUNYA KAMU) ===== */
-const app = initializeApp({
-  apiKey: "AIzaSyAvl_paDtkaHgPM2F1PRtybh_EanGfDT_Q",
-  databaseURL: "https://serversetoran-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "serversetoran"
+const ADMIN_PIN="500000";
+const app=initializeApp({
+  apiKey:"AIzaSyAvl_paDtkaHgPM2F1PRtybh_EanGfDT_Q",
+  databaseURL:"https://serversetoran-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId:"serversetoran"
 });
-const db = getDatabase(app);
+const db=getDatabase(app);
+let cache=[],editId=null;
 
-/* ===== LOGIN LOGIC ===== */
-window.loginAdmin = ()=>{
-  if(pin.value === ADMIN_PIN){
-    sessionStorage.setItem("admin","1");
-    loginBox.style.display="none";
-    adminApp.style.display="block";
-  }else{
-    err.textContent="❌ PIN salah";
-    pin.value="";
-  }
+/* LOGIN */
+window.loginAdmin=()=>{
+  pin.value===ADMIN_PIN
+  ?(sessionStorage.admin=1,loginBox.style.display="none",adminApp.style.display="block")
+  :(err.textContent="PIN Salah",pin.value="")
+};
+if(sessionStorage.admin)loginAdmin();
+
+/* ADD USER */
+addForm.onsubmit=e=>{
+  e.preventDefault();
+  push(ref(db,"userList"),{
+    username:u.value.toUpperCase(),
+    storeId:s.value.toUpperCase(),
+    expired:exp.value,
+    role:r.value,
+    active:true
+  });
+  addForm.reset();
 };
 
-/* AUTO SHOW IF LOGIN */
-if(sessionStorage.getItem("admin")==="1"){
-  loginBox.style.display="none";
-  adminApp.style.display="block";
-}
-
-/* ===== LOAD USER ===== */
+/* LOAD */
 onValue(ref(db,"userList"),snap=>{
+  cache=[];
+  snap.forEach(c=>cache.push({id:c.key,...c.val()}));
+  render(cache);
+});
+
+/* RENDER */
+function render(data){
   list.innerHTML="";
-  snap.forEach(c=>{
-    const u=c.val();
+  total.textContent=data.length;
+  data.forEach(u=>{
     list.innerHTML+=`
 <tr>
 <td>${u.username}</td>
@@ -208,36 +293,48 @@ onValue(ref(db,"userList"),snap=>{
 <td>${u.deviceId?"🔒":"-"}</td>
 <td><span class="badge ${u.active?"on":"off"}">${u.active?"Aktif":"Off"}</span></td>
 <td>
-<button class="small gray" onclick="resetDevice('${c.key}')">Reset</button>
-<button class="small" onclick="toggle('${c.key}',${u.active})">On/Off</button>
-<button class="small danger" onclick="delUser('${c.key}')">Hapus</button>
+<button class="small gray" onclick="edit('${u.id}')">Edit</button>
+<button class="small" onclick="toggle('${u.id}',${u.active})">On/Off</button>
+<button class="small danger" onclick="del('${u.id}')">Hapus</button>
 </td>
 </tr>`;
   });
-});
+}
 
-/* ===== CRUD ===== */
-addForm.onsubmit=e=>{
-  e.preventDefault();
-  push(ref(db,"userList"),{
-    username:u.value.toUpperCase(),
-    storeId:s.value.toUpperCase(),
-    expired:e.value,
-    role:r.value,
-    active:true
-  });
-  addForm.reset();
+/* SEARCH */
+search.oninput=()=>{
+  const q=search.value.toLowerCase();
+  render(cache.filter(u=>
+    u.username.toLowerCase().includes(q) ||
+    u.storeId.toLowerCase().includes(q)
+  ));
 };
 
-window.resetDevice=id=>update(ref(db,"userList/"+id),{deviceId:null});
+/* ACTION */
 window.toggle=(id,a)=>update(ref(db,"userList/"+id),{active:!a});
-window.delUser=id=>confirm("Hapus user?")&&remove(ref(db,"userList/"+id));
+window.del=id=>confirm("Hapus user?")&&remove(ref(db,"userList/"+id));
 
-window.logout=()=>{
-  sessionStorage.clear();
-  location.reload();
+/* EDIT */
+window.edit=id=>{
+  const u=cache.find(x=>x.id===id);
+  editId=id;
+  eu.value=u.username;
+  es.value=u.storeId;
+  eexp.value=u.expired;
+  er.value=u.role;
+  editModal.style.display="flex";
 };
-</script>
+window.saveEdit=()=>{
+  update(ref(db,"userList/"+editId),{
+    username:eu.value.toUpperCase(),
+    storeId:es.value.toUpperCase(),
+    expired:eexp.value,
+    role:er.value
+  });
+  editModal.style.display="none";
+};
 
+window.logout=()=>{sessionStorage.clear();location.reload()};
+</script>
 </body>
 </html>
