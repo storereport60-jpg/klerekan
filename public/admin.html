@@ -82,7 +82,7 @@ button{cursor:pointer;border:none;color:#fff;font-weight:600}
 <div id="panel" class="hidden">
 
   <div class="card header">
-    <h2>🧑‍💼 Admin Panel</h2>
+    <h2>🧑‍💼 Panel Administrator</h2>
     <button class="danger" onclick="logout()">Logout</button>
   </div>
 
@@ -93,13 +93,14 @@ button{cursor:pointer;border:none;color:#fff;font-weight:600}
 
   <!-- ADD USER -->
   <div class="card">
-    <h3>➕ Tambah User</h3>
+    <h3>User Manajemen</h3>
     <div class="flex">
       <input id="u" placeholder="Username">
       <input id="s" placeholder="Store ID">
-      <input id="e" type="date">
+      <input id="d" type="number" min="1" placeholder="Masa aktif (hari)">
       <button class="success" onclick="addUser()">Tambah User</button>
     </div>
+    <div class="small">Contoh: isi <b>30</b> untuk aktif 30 hari</div>
   </div>
 
   <!-- LIST -->
@@ -167,7 +168,7 @@ function renderTable(){
 <tr>
 <td>${u.username}</td>
 <td>${u.storeId}</td>
-<td>${u.expired}</td>
+<td>${u.expired || "-"}</td>
 <td>${u.deviceId?"🔒 Terkunci":"🟢 Bebas"}</td>
 <td>
 <button class="warning" onclick="editUser('${id}')">Edit</button>
@@ -180,35 +181,47 @@ function renderTable(){
 
 /* ===== CRUD ===== */
 function addUser(){
-  if(!u.value||!s.value||!e.value) return alert("Lengkapi data");
+  if(!u.value||!s.value||!d.value) return alert("Lengkapi data");
+
+  const days=parseInt(d.value);
+  const now=new Date();
+  now.setDate(now.getDate()+days);
+  const expired=now.toISOString().split("T")[0];
+
   db.ref("userList").push({
     username:u.value.toUpperCase(),
     storeId:s.value.toUpperCase(),
-    expired:e.value,
+    activeDays:days,
+    expired:expired,
     active:true
   });
-  u.value=s.value=e.value="";
+
+  u.value=s.value=d.value="";
 }
+
 function delUser(id){
   confirm("Hapus user?") && db.ref("userList/"+id).remove();
 }
+
 function editUser(id){
-  const u1=prompt("Username baru:");
-  const s1=prompt("Store ID baru:");
-  const e1=prompt("Expired (YYYY-MM-DD):");
-  if(u1&&s1&&e1)
-    db.ref("userList/"+id).update({
-      username:u1.toUpperCase(),
-      storeId:s1.toUpperCase(),
-      expired:e1
-    });
+  const days=prompt("Perpanjang berapa hari?");
+  if(!days) return;
+  const now=new Date();
+  now.setDate(now.getDate()+parseInt(days));
+  db.ref("userList/"+id).update({
+    activeDays:parseInt(days),
+    expired:now.toISOString().split("T")[0]
+  });
 }
+
 function resetDevice(id,name){
   if(confirm(`Reset device ${name}?`))
     db.ref("userList/"+id).update({deviceId:null,lastLogin:null});
 }
+
 function logout(){location.reload();}
 </script>
 
 </body>
 </html>
+
