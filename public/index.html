@@ -128,10 +128,9 @@ button{
   <div class="meta" id="todayText"></div>
   <div class="meta" id="expiredInfo"></div>
 
-  <!-- PENGUMUMAN (SETELAH LOGIN) -->
   <div class="announce">
     📢 <strong>Pengumuman</strong><br>
-    Wajib bergabung ke grup WhatsApp resmi untuk info & update sistem<br>
+    Wajib bergabung ke grup WhatsApp resmi<br>
     👉 <a href="https://chat.whatsapp.com/J4CLPxvk942FEufV5FIxY3" target="_blank">
       Gabung Grup WhatsApp
     </a>
@@ -142,7 +141,6 @@ button{
       <input type="file" id="zipInput" accept=".zip" required>
       <span id="fileLabel">Upload File ZIP</span>
     </label>
-
     <button class="btn-primary" id="submitBtn">Proses</button>
   </form>
 
@@ -166,7 +164,7 @@ button{
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-app.js";
-import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
+import { getDatabase, ref, get } from "https://www.gstatic.com/firebasejs/10.12.4/firebase-database.js";
 
 const app = initializeApp({
   apiKey: "AIzaSyAvl_paDtkaHgPM2F1PRtybh_EanGfDT_Q",
@@ -175,17 +173,9 @@ const app = initializeApp({
 });
 const db = getDatabase(app);
 
-function deviceId(){
-  let d=localStorage.getItem("device_id");
-  if(!d){
-    d="DEV-"+btoa(navigator.userAgent+screen.width+screen.height).slice(0,20);
-    localStorage.setItem("device_id",d);
-  }
-  return d;
-}
-
 let userStoreId="";
 let expiredDate="";
+
 const todayID=()=>new Date().toLocaleDateString("id-ID",{weekday:"long",day:"2-digit",month:"long",year:"numeric"});
 const dateID=d=>new Date(d).toLocaleDateString("id-ID",{day:"2-digit",month:"long",year:"numeric"});
 
@@ -195,27 +185,19 @@ window.login = async ()=>{
   if(!u) return error.textContent="Username wajib diisi";
 
   const snap=await get(ref(db,"userList"));
-  let key=null,user=null;
+  let user=null;
 
   snap.forEach(c=>{
     const v=c.val();
-    if(v.username===u && v.active){
-      key=c.key;
+    if(v.username===u){
       user=v;
     }
   });
 
-  if(!user) return error.textContent="Akun tidak ditemukan / tidak aktif";
+  if(!user) return error.textContent="Akun tidak ditemukan";
 
   const today=new Date().toISOString().split("T")[0];
   if(user.expired < today) return error.textContent="Akun sudah expired";
-
-  const dev=deviceId();
-  if(!user.deviceId){
-    await update(ref(db,"userList/"+key),{deviceId:dev});
-  }else if(user.deviceId!==dev){
-    return error.textContent="Akun terkunci di device lain";
-  }
 
   userStoreId=user.storeId;
   expiredDate=user.expired;
