@@ -20,75 +20,26 @@
   --warn:#f59e0b;
   --ok:#16a34a;
 }
-
 *{box-sizing:border-box}
 body{
   margin:0;
   font-family:Inter,Segoe UI,Arial,sans-serif;
   background:linear-gradient(180deg,#f8fafc,#eef2f7);
-  color:var(--text);
 }
-
-/* LOGIN */
-.login-wrap{
-  position:fixed;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-.login-card{
-  width:100%;
-  max-width:420px;
-  background:#fff;
-  padding:42px 38px;
-  border-radius:18px;
-  border:1px solid var(--border);
-  box-shadow:0 20px 45px rgba(0,0,0,.08);
-  text-align:center;
-}
-.login-card h1{margin:0 0 6px;font-size:26px}
-.login-card p{margin:0 0 26px;color:var(--muted);font-size:14px}
-.login-card input{
-  width:100%;
-  padding:14px;
-  font-size:16px;
-  text-align:center;
-  border-radius:10px;
-  border:1px solid var(--border);
-}
-.login-card button{
-  margin-top:18px;
-  width:100%;
-  padding:12px;
-  border:none;
-  border-radius:10px;
-  background:var(--primary);
-  color:#fff;
-  font-size:15px;
-  font-weight:600;
-  cursor:pointer;
-}
-
-/* PANEL */
+.login-wrap{position:fixed;inset:0;display:flex;align-items:center;justify-content:center}
+.login-card{max-width:420px;width:100%;background:#fff;padding:42px;border-radius:18px;border:1px solid var(--border);text-align:center}
 #panel{display:none}
 .container{max-width:1200px;margin:30px auto;padding:0 16px}
-.card{
-  background:#fff;
-  border-radius:14px;
-  border:1px solid var(--border);
-  padding:22px;
-  margin-bottom:20px;
-}
+.card{background:#fff;border-radius:14px;border:1px solid var(--border);padding:22px;margin-bottom:20px}
 table{width:100%;border-collapse:collapse}
 th,td{padding:10px;border-bottom:1px solid var(--border);font-size:14px}
 th{background:#f9fafb}
-input,select,button{padding:8px;border-radius:6px;border:1px solid #ccc}
+input,select,button{padding:8px;border-radius:6px}
 button{border:none;color:#fff;font-weight:600;cursor:pointer}
 .primary{background:var(--primary)}
 .warning{background:var(--warn)}
-.gray{background:#6b7280}
 .danger{background:var(--danger)}
+.gray{background:#6b7280}
 .flex{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
 .badge{background:#eef2ff;padding:6px 14px;border-radius:999px;font-weight:600}
 .small{font-size:12px;color:var(--muted)}
@@ -101,9 +52,9 @@ button{border:none;color:#fff;font-weight:600;cursor:pointer}
 <div class="login-wrap" id="loginBox">
   <div class="login-card">
     <h1>Administrator</h1>
-    <p>Masukkan PIN Anda</p>
-    <input id="pin" type="password" maxlength="6" placeholder="••••••">
-    <button onclick="login()">Login</button>
+    <p>Masukkan PIN</p>
+    <input id="pin" type="password">
+    <button onclick="login()" class="primary">Login</button>
   </div>
 </div>
 
@@ -111,15 +62,10 @@ button{border:none;color:#fff;font-weight:600;cursor:pointer}
 <div id="panel">
   <div class="container">
 
-    <!-- GREETING -->
-    <div class="card" style="background:#f8fafc">
-      <h3 id="greeting" style="margin:0 0 6px"></h3>
-      <p style="margin:0;color:var(--muted);font-size:14px">
-        Semoga aktivitas hari ini berjalan lancar.
-      </p>
+    <div class="card">
+      <h3 id="greeting"></h3>
     </div>
 
-    <!-- ADD USER -->
     <div class="card">
       <h3>User Management</h3>
       <div class="flex">
@@ -127,24 +73,20 @@ button{border:none;color:#fff;font-weight:600;cursor:pointer}
         <input id="s" placeholder="STORE ID" oninput="this.value=this.value.toUpperCase()">
         <input id="d" type="number" placeholder="Masa aktif (hari)">
         <button class="primary" onclick="addUser()">Simpan</button>
-        <span class="badge">Total User: <span id="total">0</span></span>
+        <span class="badge">Total: <span id="total">0</span></span>
       </div>
     </div>
 
-    <!-- SEARCH & FILTER -->
     <div class="card">
-      <div class="flex">
-        <input id="search" placeholder="🔍 Cari username / store ID" oninput="render()">
-        <select id="filter" onchange="render()">
-          <option value="all">Semua</option>
-          <option value="active">Aktif</option>
-          <option value="soon">Hampir Expired (≤7 hari)</option>
-          <option value="expired">Expired</option>
-        </select>
-      </div>
+      <input id="search" placeholder="Cari..." oninput="render()">
+      <select id="filter" onchange="render()">
+        <option value="all">Semua</option>
+        <option value="active">Aktif</option>
+        <option value="soon">Hampir Expired</option>
+        <option value="expired">Expired</option>
+      </select>
     </div>
 
-    <!-- TABLE -->
     <div class="card">
       <table>
         <thead>
@@ -165,40 +107,23 @@ button{border:none;color:#fff;font-weight:600;cursor:pointer}
 </div>
 
 <script>
-/* FIREBASE */
 firebase.initializeApp({
-  apiKey: "AIzaSyAvl_paDtkaHgPM2F1PRtybh_EanGfDT_Q",
-  databaseURL: "https://serversetoran-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "serversetoran"
+  apiKey:"AIzaSyAvl_paDtkaHgPM2F1PRtybh_EanGfDT_Q",
+  databaseURL:"https://serversetoran-default-rtdb.asia-southeast1.firebasedatabase.app"
 });
-const db = firebase.database();
-
-/* CONFIG */
+const db=firebase.database();
 const ADMIN_PIN="500000";
 const ADMIN_NAME="Pak Imron";
 let USERS={};
 
-/* GREETING BY TIME */
-function setGreeting(){
-  const h=new Date().getHours();
-  let g="Selamat datang";
-  if(h<11) g="Selamat pagi";
-  else if(h<15) g="Selamat siang";
-  else if(h<18) g="Selamat sore";
-  else g="Selamat malam";
-  greeting.innerText=`👋 ${g}, ${ADMIN_NAME}`;
-}
-
-/* LOGIN */
 function login(){
   if(pin.value!==ADMIN_PIN) return alert("PIN salah");
   loginBox.style.display="none";
   panel.style.display="block";
-  setGreeting();
+  greeting.innerText="👋 Selamat datang, "+ADMIN_NAME;
   load();
 }
 
-/* LOAD */
 function load(){
   db.ref("userList").on("value",s=>{
     USERS=s.val()||{};
@@ -207,14 +132,10 @@ function load(){
   });
 }
 
-/* ADD USER */
 function addUser(){
-  const days=parseInt(d.value);
-  if(!u.value||!s.value||!days) return alert("Lengkapi data");
-
+  if(!u.value||!s.value||!d.value) return alert("Lengkapi data");
   const exp=new Date();
-  exp.setDate(exp.getDate()+days);
-
+  exp.setDate(exp.getDate()+parseInt(d.value));
   db.ref("userList").push({
     username:u.value,
     storeId:s.value,
@@ -223,11 +144,10 @@ function addUser(){
   u.value=s.value=d.value="";
 }
 
-/* RENDER */
 function render(){
+  list.innerHTML="";
   const q=search.value.toLowerCase();
   const f=filter.value;
-  list.innerHTML="";
   const now=new Date();
 
   Object.keys(USERS).forEach(id=>{
@@ -238,11 +158,11 @@ function render(){
     if(q && !u.username.toLowerCase().includes(q) && !u.storeId.toLowerCase().includes(q)) return;
     if(f==="active" && diff<=0) return;
     if(f==="expired" && diff>0) return;
-    if(f==="soon" && (diff>7 || diff<=0)) return;
+    if(f==="soon" && (diff>7||diff<=0)) return;
 
-    let status=`<span class="small" style="color:var(--ok)">Aktif</span>`;
-    if(diff<=0) status=`<span class="small" style="color:var(--danger)">Expired</span>`;
-    else if(diff<=7) status=`<span class="small" style="color:var(--warn)">Hampir Expired (${diff} hari)</span>`;
+    let status=`<span style="color:var(--ok)">Aktif</span>`;
+    if(diff<=0) status=`<span style="color:var(--danger)">Expired</span>`;
+    else if(diff<=7) status=`<span style="color:var(--warn)">Hampir Expired</span>`;
 
     list.innerHTML+=`
 <tr>
@@ -252,20 +172,17 @@ function render(){
 <td>${status}</td>
 <td>
 <button class="warning" onclick="editUser('${id}')">Edit</button>
-<button class="gray" onclick="resetDevice('${id}')">Reset</button>
 <button class="danger" onclick="delUser('${id}')">Hapus</button>
 </td>
 </tr>`;
   });
 }
 
-/* EDIT */
 function editUser(id){
   const dta=USERS[id];
   const nu=prompt("Username:",dta.username);
   const ns=prompt("Store ID:",dta.storeId);
   const add=parseInt(prompt("Tambah masa aktif (hari):",0));
-
   if(!nu||!ns) return;
 
   let exp=new Date(dta.expired);
@@ -278,17 +195,12 @@ function editUser(id){
   });
 }
 
-/* OTHER */
-function resetDevice(id){
-  if(confirm("Reset device user?"))
-    db.ref("userList/"+id).update({deviceId:null,lastLogin:null});
-}
 function delUser(id){
-  if(confirm("Hapus user?"))
-    db.ref("userList/"+id).remove();
+  if(confirm("Hapus user?")) db.ref("userList/"+id).remove();
 }
 function logout(){location.reload()}
 </script>
 
 </body>
 </html>
+
