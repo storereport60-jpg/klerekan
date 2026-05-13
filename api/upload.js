@@ -1,166 +1,341 @@
+# upload.js (FULL REPLACE – SIAP DEPLOY)
+
+```javascript
 import multer from "multer";
 import AdmZip from "adm-zip";
 import Database from "better-sqlite3";
 import fs from "fs";
 import path from "path";
 
-export const config = { api: { bodyParser: false } };
+export const config = {
+  api: {
+    bodyParser: false
+  }
+};
 
-// ================= MULTER =================
+// ===============================
+// 🔥 MULTER CONFIG
+// ===============================
 const upload = multer({
   storage: multer.diskStorage({
     destination: "/tmp",
-    filename: (req, file, cb) =>
-      cb(null, Date.now() + "-" + file.originalname)
+    filename: (req, file, cb) => {
+      cb(null, Date.now() + "-" + file.originalname);
+    }
   }),
-  limits: { fileSize: 20 * 1024 * 1024 } // 20MB
+  limits: {
+    fileSize: 20 * 1024 * 1024 // 20MB
+  }
 });
 
-// ================= HELPER =================
+// ===============================
+// 🔥 HELPER MIDDLEWARE
+// ===============================
 function runMiddleware(req, res, fn) {
   return new Promise((resolve, reject) => {
-    fn(req, res, (result) =>
-      result instanceof Error ? reject(result) : resolve(result)
-    );
+    fn(req, res, (result) => {
+      if (result instanceof Error) {
+        return reject(result);
+      }
+      return resolve(result);
+    });
   });
 }
 
-// ================= HANDLER =================
+// ===============================
+// 🔥 FORMAT RUPIAH
+// ===============================
+function toNumber(v) {
+  return Number(v || 0);
+}
+
+// ===============================
+// 🔥 MAIN API
+// ===============================
 export default async function handler(req, res) {
 
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return res.status(405).json({
+      error: "Method tidak diizinkan"
+    });
   }
 
-  let file;
-  let extractDir;
+  let uploadedFile = null;
+  let extractDir = null;
+  let db = null;
 
   try {
+
+    // ===============================
+    // 🔥 UPLOAD FILE
+    // ===============================
     await runMiddleware(req, res, upload.single("zipfile"));
 
-    file = req.file;
-    const storeId = req.body.storeId?.toUpperCase();
+    uploadedFile = req.file;
 
-    // ================= VALIDASI =================
-    if (!file) {
-      return res.status(400).json({ error: "File ZIP wajib diupload" });
+    const storeId = String(req.body.storeId || "")
+      .trim()
+      .toUpperCase();
+
+    // ===============================
+    // 🔥 VALIDASI
+    // ===============================
+    if (!uploadedFile) {
+      return res.status(400).json({
+        error: "File ZIP wajib diupload"
+      });
     }
 
     if (!storeId) {
-      return res.status(400).json({ error: "Store ID tidak valid" });
+      return res.status(400).json({
+        error: "Store ID tidak ditemukan"
+      });
     }
 
-    if (!file.originalname.toLowerCase().endsWith(".zip")) {
-      return res.status(400).json({ error: "File harus format ZIP" });
+    if (!uploadedFile.originalname.toLowerCase().endsWith(".zip")) {
+      return res.status(400).json({
+        error: "Format file harus ZIP"
+      });
     }
 
-    // ================= DETAIL FILE =================
-    const raw = file.originalname.replace(".zip", "");
-    const p = raw.split(/[_-]/);
+    // ===============================
+    // 🔥 EXTRACT ZIP
+    // ===============================
+    extractDir = path.join("/tmp", "extract-" + Date.now());
 
-    let detail = `Hasil Penjualan Toko ${storeId}`;
+    fs.mkdirSync(extractDir, {
+      recursive: true
+    });
 
-    if (p.length >= 5) {
-      detail = `Toko ${p[0]} | ${p[3]}/${p[2]}/${p[1]} | NIK ${p[4]}`;
-    }
-
-    // ================= EXTRACT =================
-    extractDir = path.join("/tmp", "extract_" + Date.now());
-    fs.mkdirSync(extractDir, { recursive: true });
-
-    const zip = new AdmZip(file.path);
+    const zip = new AdmZip(uploadedFile.path);
     zip.extractAllTo(extractDir, true);
 
-    // ================= CARI DB =================
-    const dbFile = fs.readdirSync(extractDir).find(f =>
-      f.toLowerCase().endsWith(".db") ||
-      f.toLowerCase().endsWith(".sqlite")
-    );
+    // ===============================
+    // 🔥 CARI DATABASE
+    // ===============================
+    const files = fs.readdirSync(extractDir);
+
+    const dbFile = files.find(file => {
+      const lower = file.toLowerCase();
+
+      return (
+        lower.endsWith(".db") ||
+        lower.endsWith(".sqlite") ||
+        lower.endsWith(".sqlite3")
+      );
+    });
 
     if (!dbFile) {
-      throw new Error("Database tidak ditemukan di dalam ZIP");
+      return res.status(400).json({
+        error: "Database SQLite tidak ditemukan di ZIP"
+      });
     }
 
     const dbPath = path.join(extractDir, dbFile);
-const db = new Database(dbPath, { readonly: true });
 
-const totalRow = db.prepare(`
-  SELECT COUNT(*) as total 
-  FROM tx_tsale 
-  WHERE store_id = ?
-`).get(storeId);
-
-if (!totalRow || totalRow.total === 0) {
-  db.close();
-  return res.status(403).json({
-    error: "Data laporan bukan milik toko Anda"
-  });
-}
-
-// 🔥 1. Ambil tanggal terbaru
-const lastDateRow = db.prepare(`
-  SELECT MAX(date_tx) as last_date
-  FROM tx_tsale
-  WHERE store_id = ?
-`).get(storeId);
-
-if (!lastDateRow || !lastDateRow.last_date) {
-  db.close();
-  return res.status(404).json({
-    error: "Tanggal transaksi tidak ditemukan"
-  });
-}
-
-const lastDate = lastDateRow.last_date;
-
-// 🔥 2. Ambil data hanya di tanggal itu
-const result = db.prepare(`
-  SELECT 
-    SUM(cash) as cash, 
-    SUM(change_pay) as change_pay 
-  FROM tx_tsale 
-  WHERE store_id = ?
-  AND date_tx = ?
-`).get(storeId, lastDate);
-
-db.close();
-
-    const cash = Number(result.cash || 0);
-    const change = Number(result.change_pay || 0);
-    const total = cash - change;
-
-    // ================= RESPONSE =================
-    return res.json({
-      title: "Hasil Laporan Setoran",
-      detail,
-      store_id: storeId,
-      cash,
-      change,
-      hasil: total
+    // ===============================
+    // 🔥 OPEN DATABASE
+    // ===============================
+    db = new Database(dbPath, {
+      readonly: true,
+      fileMustExist: true
     });
 
-  } catch (e) {
+    // ===============================
+    // 🔥 VALIDASI TABLE
+    // ===============================
+    const tableCheck = db.prepare(`
+      SELECT name
+      FROM sqlite_master
+      WHERE type='table'
+      AND name='tx_tsale'
+    `).get();
 
-    console.error("ERROR SETORAN:", e);
+    if (!tableCheck) {
+      return res.status(400).json({
+        error: "Table tx_tsale tidak ditemukan"
+      });
+    }
+
+    // ===============================
+    // 🔥 VALIDASI STORE
+    // ===============================
+    const storeCheck = db.prepare(`
+      SELECT COUNT(*) as total
+      FROM tx_tsale
+      WHERE UPPER(store_id)=?
+    `).get(storeId);
+
+    if (!storeCheck || storeCheck.total <= 0) {
+      return res.status(403).json({
+        error: "Data laporan bukan milik toko Anda"
+      });
+    }
+
+    // ===============================
+    // 🔥 AMBIL TANGGAL TERAKHIR
+    // ===============================
+    const lastDateRow = db.prepare(`
+      SELECT MAX(date_tx) as tanggal
+      FROM tx_tsale
+      WHERE UPPER(store_id)=?
+    `).get(storeId);
+
+    if (!lastDateRow || !lastDateRow.tanggal) {
+      return res.status(404).json({
+        error: "Tanggal transaksi tidak ditemukan"
+      });
+    }
+
+    const tanggal = lastDateRow.tanggal;
+
+    // ===============================
+    // 🔥 HITUNG TOTAL
+    // ===============================
+    const result = db.prepare(`
+      SELECT
+        SUM(cash) as total_cash,
+        SUM(change_pay) as total_change,
+        COUNT(*) as total_transaksi
+      FROM tx_tsale
+      WHERE UPPER(store_id)=?
+      AND date_tx=?
+    `).get(storeId, tanggal);
+
+    const cash = toNumber(result?.total_cash);
+    const change = toNumber(result?.total_change);
+    const hasil = cash - change;
+
+    // ===============================
+    // 🔥 DETAIL FILE
+    // ===============================
+    const namaFile = uploadedFile.originalname.replace(/\.zip$/i, "");
+
+    let detail = `Toko ${storeId}`;
+
+    const splitNama = namaFile.split(/[_-]/);
+
+    if (splitNama.length >= 5) {
+      detail = `Toko ${splitNama[0]} | ${splitNama[3]}/${splitNama[2]}/${splitNama[1]} | NIK ${splitNama[4]}`;
+    }
+
+    // ===============================
+    // 🔥 RESPONSE KE INDEX
+    // ===============================
+    return res.status(200).json({
+      success: true,
+      title: "Hasil Laporan Setoran",
+      detail,
+      tanggal,
+      store_id: storeId,
+      transaksi: result?.total_transaksi || 0,
+      cash,
+      change,
+      hasil
+    });
+
+  } catch (err) {
+
+    console.error("UPLOAD API ERROR:", err);
 
     return res.status(500).json({
-      error: e.message || "Terjadi kesalahan server"
+      error: err.message || "Terjadi kesalahan server"
     });
 
   } finally {
 
-    // ================= CLEANUP (WAJIB) =================
+    // ===============================
+    // 🔥 CLOSE DB
+    // ===============================
     try {
-      if (file?.path && fs.existsSync(file.path)) {
-        fs.unlinkSync(file.path);
+      if (db) {
+        db.close();
       }
+    } catch (e) {
+      console.log("DB CLOSE ERROR:", e.message);
+    }
 
-      if (extractDir && fs.existsSync(extractDir)) {
-        fs.rmSync(extractDir, { recursive: true, force: true });
+    // ===============================
+    // 🔥 HAPUS FILE ZIP
+    // ===============================
+    try {
+      if (uploadedFile?.path && fs.existsSync(uploadedFile.path)) {
+        fs.unlinkSync(uploadedFile.path);
       }
-    } catch (cleanupErr) {
-      console.warn("Cleanup error:", cleanupErr);
+    } catch (e) {
+      console.log("DELETE ZIP ERROR:", e.message);
+    }
+
+    // ===============================
+    // 🔥 HAPUS FOLDER EXTRACT
+    // ===============================
+    try {
+      if (extractDir && fs.existsSync(extractDir)) {
+        fs.rmSync(extractDir, {
+          recursive: true,
+          force: true
+        });
+      }
+    } catch (e) {
+      console.log("DELETE EXTRACT ERROR:", e.message);
     }
 
   }
 }
+```
+
+# package.json dependency wajib
+
+```json
+{
+  "dependencies": {
+    "adm-zip": "^0.5.16",
+    "better-sqlite3": "^12.4.1",
+    "multer": "^2.0.2"
+  }
+}
+```
+
+# Struktur Vercel
+
+```bash
+/api/upload.js
+/index.html
+/package.json
+```
+
+# vercel.json (opsional)
+
+```json
+{
+  "functions": {
+    "api/upload.js": {
+      "maxDuration": 60
+    }
+  }
+}
+```
+
+# Yang sudah disesuaikan dengan index HTML
+
+* API menerima field:
+
+  * zipfile
+  * storeId
+
+* Response cocok dengan index:
+
+  * title
+  * detail
+  * hasil
+  * error
+
+* Sudah support:
+
+  * ZIP upload
+  * SQLite DB
+  * Validasi store
+  * Ambil tanggal transaksi terakhir
+  * Hitung cash - change_pay
+  * Auto cleanup tmp
+  * Ready deploy Vercel
