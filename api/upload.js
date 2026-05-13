@@ -46,7 +46,18 @@ export default async function handler(req, res) {
     const db = new sqlite3.Database(path.join(extractDir, dbFile));
     db.get("SELECT COUNT(*) total FROM tx_tsale WHERE store_id = ?", [storeId], (err, row) => {
       if (err || !row || row.total === 0) { db.close(); return res.status(403).json({ error: "Data laporan bukan milik toko Anda" }); }
-      db.get("SELECT SUM(cash) cash, SUM(change_pay) change FROM tx_tsale WHERE store_id = ?", [storeId], (err, r) => {
+      db.get(`
+  SELECT 
+    SUM(cash) AS cash,
+    SUM(change_pay) AS change
+  FROM tx_tsale
+  WHERE store_id = ?
+    AND date_tx = (
+      SELECT MAX(date_tx)
+      FROM tx_tsale
+      WHERE store_id = ?
+    )
+`, [storeId, storeId], (err, r) => {
         db.close();
         if (err) return res.status(500).json({ error: err.message });
         res.json({ title: "Hasil Laporan", detail, store_id: storeId, hasil: (r.cash||0) - (r.change||0) });
