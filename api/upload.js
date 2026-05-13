@@ -1,6 +1,3 @@
-# upload.js (FULL REPLACE – SIAP DEPLOY)
-
-```javascript
 import multer from "multer";
 import AdmZip from "adm-zip";
 import Database from "better-sqlite3";
@@ -282,60 +279,3 @@ export default async function handler(req, res) {
 
   }
 }
-```
-
-# package.json dependency wajib
-
-```json
-{
-  "dependencies": {
-    "adm-zip": "^0.5.16",
-    "better-sqlite3": "^12.4.1",
-    "multer": "^2.0.2"
-  }
-}
-```
-
-# Struktur Vercel
-
-```bash
-/api/upload.js
-/index.html
-/package.json
-```
-
-# vercel.json (opsional)
-
-```json
-{
-  "functions": {
-    "api/upload.js": {
-      "maxDuration": 60
-    }
-  }
-}
-```
-
-# Yang sudah disesuaikan dengan index HTML
-
-* API menerima field:
-
-  * zipfile
-  * storeId
-
-* Response cocok dengan index:
-
-  * title
-  * detail
-  * hasil
-  * error
-
-* Sudah support:
-
-  * ZIP upload
-  * SQLite DB
-  * Validasi store
-  * Ambil tanggal transaksi terakhir
-  * Hitung cash - change_pay
-  * Auto cleanup tmp
-  * Ready deploy Vercel
