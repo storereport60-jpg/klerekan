@@ -35,7 +35,7 @@ body{
   border:1px solid var(--border);
 }
 .container.wide{
-  max-width:800px;
+  max-width:850px;
 }
 h1{text-align:center;font-size:22px;margin:0 0 6px}
 .subtitle{text-align:center;font-size:14px;color:var(--muted);margin-bottom:20px}
@@ -108,7 +108,7 @@ button{
 }
 .announce a:hover{text-decoration:underline}
 
-/* STYLES KHUSUS RECEIPT / STRUK */
+/* STYLES STRUK & LIST PENJUALAN */
 .receipt-grid {
   display: grid;
   grid-template-columns: 1fr;
@@ -124,31 +124,43 @@ button{
 .receipt-list {
   border: 1px solid var(--border);
   border-radius: 10px;
-  max-height: 350px;
+  max-height: 400px;
   overflow-y: auto;
+  background: #fafafa;
+  padding: 8px;
 }
 .receipt-item {
-  padding: 10px 14px;
-  border-bottom: 1px solid var(--border);
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  margin-bottom: 8px;
   cursor: pointer;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 13px;
+  background: #fff;
+  transition: all 0.15s ease;
+  line-height: 1.6;
 }
-.receipt-item:hover, .receipt-item.active {
-  background: #f0f7ff;
+.receipt-item:hover {
+  background: #f3f4f6;
+  transform: translateY(-1px);
+}
+.receipt-item.active {
+  border-color: var(--primary);
+  background: #eef2ff;
 }
 .receipt-preview {
-  background: #f9fafb;
+  background: #fff;
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 12px;
-  font-family: monospace;
-  font-size: 11px;
+  padding: 14px;
+  font-family: Consolas, "Courier New", monospace;
+  font-size: 13px;
+  line-height: 1.35;
   white-space: pre-wrap;
-  max-height: 350px;
+  word-break: break-word;
+  max-height: 400px;
   overflow-y: auto;
+  color: #111827;
+  box-shadow: inset 0 1px 3px rgba(0,0,0,0.05);
 }
 
 #uploadPage,#resultPage{display:none}
@@ -201,11 +213,11 @@ button{
 
 <!-- RESULT -->
 <div class="container wide fade" id="resultPage">
-  <h1 id="resultTitle"></h1>
+  <h1 id="resultTitle">Hasil Laporan Setoran</h1>
   <div class="meta" id="resultDetail"></div>
   
   <div class="total">
-    <div class="label">TOTAL SETORAN</div>
+    <div class="label">TOTAL SETORAN TUNAI</div>
     <div class="value" id="totalValue">Rp 0</div>
     <div class="meta" id="resultKasirInfo" style="margin-top: 6px;"></div>
   </div>
@@ -297,7 +309,6 @@ form.onsubmit=async e=>{
   fd.append("storeId",userStoreId);
 
   try {
-    // API disesuaikan dengan endpoint /api/setoran
     const r=await fetch("/api/setoran",{method:"POST",body:fd});
     const j=await r.json();
 
@@ -325,18 +336,24 @@ form.onsubmit=async e=>{
       totalReceiptCount.textContent = j.total_receipt || j.receipts.length;
       receiptList.innerHTML = "";
 
-      j.receipts.forEach((r, idx) => {
+      j.receipts.forEach((r) => {
         const item = document.createElement("div");
         item.className = "receipt-item";
+        
+        const cash = Number(r.cash || 0);
+        const change = Number(r.change_pay || 0);
+        const net = cash - change;
+
         item.innerHTML = `
-          <div>
-            <strong>Faktur: ${r.bill_no}</strong>
-            <div style="font-size:11px; color:var(--muted);">${r.date_tx}</div>
-          </div>
-          <div style="font-weight:bold; color:var(--primary);">
-            Rp ${(r.cash - r.change_pay).toLocaleString("id-ID")}
-          </div>
+          <div><b>No Bon :</b> ${r.bill_no}</div>
+          <div><b>Tanggal :</b> ${r.date_tx}</div>
+          <div><b>No Member :</b> ${r.cust_id || '-'}</div>
+          <div><b>No HP :</b> ${r.phone || '-'}</div>
+          <div><b>Tunai :</b> Rp ${cash.toLocaleString('id-ID')}</div>
+          <div><b>Kembalian :</b> Rp ${change.toLocaleString('id-ID')}</div>
+          <div style="color:var(--primary); font-weight:bold;"><b>Setoran :</b> Rp ${net.toLocaleString('id-ID')}</div>
         `;
+
         item.onclick = () => {
           document.querySelectorAll('.receipt-item').forEach(el => el.classList.remove('active'));
           item.classList.add('active');
@@ -345,7 +362,7 @@ form.onsubmit=async e=>{
         receiptList.appendChild(item);
       });
 
-      // Show first receipt preview by default
+      // Tampilkan struk pertama secara otomatis
       if(receiptList.children[0]) receiptList.children[0].click();
     } else {
       receiptArea.style.display = "none";
@@ -369,7 +386,10 @@ function showReceiptPreview(r) {
     r.addtl2,
     r.addtl3,
     r.footer
-  ].filter(Boolean).join("\n");
+  ]
+  .filter(Boolean)
+  .join("\n")
+  .replace(/\|/g, "\n"); // Mengubah simbol '|' menjadi baris baru agar rapi
 
   receiptPreview.textContent = content || "Detail struk kosong.";
 }
